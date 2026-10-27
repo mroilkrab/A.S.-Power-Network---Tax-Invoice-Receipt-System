@@ -1,0 +1,8 @@
+{
+  "name": "A.S. Power Network - Tax Invoice & Receipt System",
+  "description": "ระบบออกใบเสร็จรับเงิน/ใบกำกับภาษี ห้างหุ้นส่วนจำกัด เอ. เอส. เพาเวอร์ เน็ทเวิร์ค พร้อมแดชบอร์ดสรุปยอดขาย-ภาษี 12 เดือน และระบบสำรองข้อมูลไฮบริด",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
