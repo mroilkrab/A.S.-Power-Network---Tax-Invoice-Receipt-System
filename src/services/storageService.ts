@@ -1,5 +1,6 @@
 import { CompanySettings, InvoiceDocument, BackupLog } from '../types/index.ts';
 import { DEFAULT_COMPANY_SETTINGS, INITIAL_DOCUMENTS } from '../utils/defaultData.ts';
+import { CloudflareD1Service } from './cloudflareD1Service.ts';
 
 const STORAGE_KEY_INVOICES = 'as_power_invoices_v1';
 const STORAGE_KEY_SETTINGS = 'as_power_settings_v1';
@@ -281,6 +282,146 @@ export class StorageService {
     a.download = `VAT_Report_AS_Power_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  /**
+   * Export 12-Month Financial Summary CSV (รายงานสรุปยอดขายและภาษี 12 เดือน)
+   */
+  static export12MonthSummaryCsv(
+    yearThai: number,
+    monthlyData: Array<{
+      monthIndex: number;
+      name: string;
+      fullName: string;
+      sales: number;
+      vat: number;
+      grandTotal: number;
+      count: number;
+    }>,
+    totalSales: number,
+    totalVat: number,
+    grandTotal: number,
+    yearInvoiceCount: number
+  ): void {
+    const settings = this.getSettings();
+    const metaHeaders = [
+      `"รายงานสรุปผลประกอบการและภาษีมูลค่าเพิ่ม 12 เดือน (12-Month Financial & Tax Summary Report)"`,
+      `"กิจการ: ${settings.name}"`,
+      `"เลขประจำตัวผู้เสียภาษี: ${settings.taxId} | สาขา: ${settings.branch}"`,
+      `"ปีภาษี: พ.ศ. ${yearThai} (ค.ศ. ${yearThai - 543})"`,
+      `"วันที่ออกรายงาน: ${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}"`
+    ];
+
+    const tableHeaders = [
+      'ลำดับเดือน',
+      'เดือน (Month)',
+      'ยอดขายก่อนภาษี (Sales Before VAT)',
+      'ภาษีมูลค่าเพิ่ม 7% (Output VAT 7%)',
+      'ยอดรวมสุทธิ (Grand Total)',
+      'จำนวนเอกสาร (ฉบับ)',
+      'สถานะการบันทึก'
+    ];
+
+    const rows = monthlyData.map((m, idx) => [
+      idx + 1,
+      `"${m.fullName}"`,
+      m.sales.toFixed(2),
+      m.vat.toFixed(2),
+      m.grandTotal.toFixed(2),
+      m.count,
+      m.count > 0 ? '"บันทึกรายการแล้ว"' : '"ไม่มีรายการ"'
+    ]);
+
+    const totalRow = [
+      '"รวม"',
+      `"รวมตลอดทั้งปี (12 เดือน พ.ศ. ${yearThai})"`,
+      totalSales.toFixed(2),
+      totalVat.toFixed(2),
+      grandTotal.toFixed(2),
+      yearInvoiceCount,
+      '"สมบูรณ์"'
+    ];
+
+    const csvContent =
+      '\uFEFF' +
+      metaHeaders.join('\n') +
+      '\n\n' +
+      tableHeaders.join(',') +
+      '\n' +
+      rows.map(r => r.join(',')).join('\n') +
+      '\n' +
+      totalRow.join(',');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Financial_Summary_12Months_${yearThai}_AS_Power.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  /**
+   * Import documents (e.g. from Word or historical upload) and automatically sync to Cloudflare D1
+   */
+  static async importDocumentsWithCloudflareD1Sync(
+    importedInvoices: InvoiceDocument[],
+    sourceName = 'MS Word / Upload'
+  ): Promise<{ success: boolean; message: string; count: number }> {
+    if (!importedInvoices || importedInvoices.length === 0) {
+      return { success: false, message: 'ไม่พบรายการเอกสารที่นำเข้า', count: 0 };
+    }
+
+    const currentList = this.getInvoices();
+    const existingDocNos = new Set(currentList.map(i => i.documentNo));
+
+    let addedCount = 0;
+    const toAdd: InvoiceDocument[] = [];
+
+    importedInvoices.forEach(inv => {
+      let targetNo = inv.documentNo;
+      if (existingDocNos.has(targetNo)) {
+        targetNo = `${targetNo}-IMP`;
+      }
+      existingDocNos.add(targetNo);
+
+      toAdd.push({
+        ...inv,
+        documentNo: targetNo,
+        syncedToCloud: true
+      });
+      addedCount++;
+    });
+
+    const updatedList = [...toAdd, ...currentList];
+    this.saveInvoices(updatedList);
+
+    const timestamp = new Date().toISOString();
+    const settings = this.getSettings();
+
+    // Trigger Cloudflare D1 synchronization
+    await CloudflareD1Service.syncToCloudflareD1(updatedList, {
+      enabled: settings.cloudflareD1Enabled !== false,
+      accountId: settings.cloudflareAccountId,
+      databaseId: settings.cloudflareD1DatabaseId || 'as-power-invoices-d1',
+      apiToken: settings.cloudflareApiToken,
+      workerUrl: settings.cloudflareWorkerUrl
+    });
+
+    // Add log
+    this.addBackupLog({
+      timestamp,
+      recordsCount: addedCount,
+      status: 'success',
+      type: 'word_import',
+      message: `นำเข้าเอกสารจาก ${sourceName} สำเร็จ (${addedCount} ฉบับ) และบันทึกลง Cloudflare D1 เรียบร้อย`
+    });
+
+    return {
+      success: true,
+      message: `นำเข้าเอกสารสำเร็จ ${addedCount} รายการ และจัดเก็บเข้า Cloudflare D1 เรียบร้อยแล้ว`,
+      count: addedCount
+    };
   }
 
   /**

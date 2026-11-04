@@ -98,3 +98,18 @@ export function formatCurrency(amount: number): string {
     maximumFractionDigits: 2
   }).format(amount || 0);
 }
+
+export const numberToBahtText = numberToThaiBaht;
+
+export function formatThaiDateWithTime(isoDateStr: string): string {
+  if (!isoDateStr) return '';
+  const date = new Date(isoDateStr);
+  if (isNaN(date.getTime())) return isoDateStr;
+  return date.toLocaleDateString('th-TH', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}

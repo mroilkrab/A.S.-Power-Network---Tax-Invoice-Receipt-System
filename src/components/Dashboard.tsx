@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { InvoiceDocument, CategoryType, CompanySettings } from '../types/index.ts';
 import { formatCurrency, THAI_MONTHS_SHORT } from '../utils/bahtText.ts';
 import { PREVIOUS_YEAR_TOTALS } from '../utils/defaultData.ts';
+import { StorageService } from '../services/storageService.ts';
 import {
   TrendingUp,
   DollarSign,
@@ -16,7 +17,9 @@ import {
   BarChart3,
   PieChart,
   RefreshCw,
-  BellRing
+  BellRing,
+  Download,
+  FileSpreadsheet
 } from 'lucide-react';
 
 interface Props {
@@ -133,6 +136,18 @@ export const Dashboard: React.FC<Props> = ({
     if (PREVIOUS_YEAR_TOTALS.totalSales === 0) return 0;
     return ((totalSales - PREVIOUS_YEAR_TOTALS.totalSales) / PREVIOUS_YEAR_TOTALS.totalSales) * 100;
   }, [totalSales]);
+
+  // Export 12-Month Summary CSV for financial reporting
+  const handleDownload12MonthCsv = () => {
+    StorageService.export12MonthSummaryCsv(
+      selectedYearThai,
+      monthlyData,
+      totalSales,
+      totalVat,
+      grandTotal,
+      yearInvoices.length
+    );
+  };
 
   return (
     <div className="space-y-6 pb-12">
@@ -326,16 +341,27 @@ export const Dashboard: React.FC<Props> = ({
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500">ปีภาษี:</span>
-            <select
-              value={selectedYearThai}
-              onChange={e => setSelectedYearThai(Number(e.target.value))}
-              className="text-xs font-semibold bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleDownload12MonthCsv}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
+              title="ดาวน์โหลดสรุป 12 เดือนสำหรับรายงานการเงิน (CSV)"
             >
-              <option value={2569}>พ.ศ. 2569 (ปีปัจจุบัน)</option>
-              <option value={2568}>พ.ศ. 2568 (ปีก่อนหน้า)</option>
-            </select>
+              <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
+              <span>ดาวน์โหลดสรุป 12 เดือน (CSV)</span>
+            </button>
+
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1">
+              <span className="text-xs font-semibold text-slate-500">ปีภาษี:</span>
+              <select
+                value={selectedYearThai}
+                onChange={e => setSelectedYearThai(Number(e.target.value))}
+                className="text-xs font-semibold bg-transparent text-slate-800 focus:outline-none cursor-pointer"
+              >
+                <option value={2569}>พ.ศ. 2569 (ปีปัจจุบัน)</option>
+                <option value={2568}>พ.ศ. 2568 (ปีก่อนหน้า)</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -435,8 +461,26 @@ export const Dashboard: React.FC<Props> = ({
             </div>
 
             {/* 12-Month Data Breakdown Table */}
-            <div className="mt-6 overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
+            <div className="mt-8">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <div>
+                  <h4 className="font-bold text-sm text-slate-900">
+                    ตารางสรุปผลประกอบการและภาษีแยกรายเดือน (ม.ค. - ธ.ค. พ.ศ. {selectedYearThai})
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    ข้อมูลรวมรายเดือนสำหรับจัดทำรายงานทางการเงินและยื่นภาษี ภ.พ.30
+                  </p>
+                </div>
+                <button
+                  onClick={handleDownload12MonthCsv}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-300 transition-colors cursor-pointer self-start sm:self-auto shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>ดาวน์โหลดสรุป 12 เดือน (CSV)</span>
+                </button>
+              </div>
+              <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-50 text-slate-600 font-bold border-y border-slate-200">
                     <th className="py-2.5 px-3">เดือน</th>
@@ -486,6 +530,7 @@ export const Dashboard: React.FC<Props> = ({
                   </tr>
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
         )}

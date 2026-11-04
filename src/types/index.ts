@@ -117,6 +117,14 @@ export interface CompanySettings {
   // Stamp & Signature Alignment
   stampPosition?: 'center' | 'left' | 'right' | 'watermark';
   stampOpacity?: number;
+
+  // Cloudflare D1 Integration
+  cloudflareD1Enabled?: boolean;
+  cloudflareAccountId?: string;
+  cloudflareD1DatabaseId?: string;
+  cloudflareApiToken?: string;
+  cloudflareWorkerUrl?: string;
+  lastD1SyncDate?: string;
 }
 
 export interface BackupLog {
@@ -124,6 +132,7 @@ export interface BackupLog {
   timestamp: string;
   recordsCount: number;
   status: 'success' | 'failed';
-  type: 'manual' | 'daily_auto' | 'hybrid_cloud';
+  type: 'manual' | 'daily_auto' | 'hybrid_cloud' | 'cloudflare_d1' | 'word_import';
   message: string;
 }
+

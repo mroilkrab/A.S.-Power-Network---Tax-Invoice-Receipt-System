@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { CompanySettings, BackupLog } from '../types/index.ts';
 import { StorageService } from '../services/storageService.ts';
+import { CloudflareD1Service } from '../services/cloudflareD1Service.ts';
 import { DEFAULT_STAMP_SVG, DEFAULT_SIGNATURE_SVG } from '../utils/defaultData.ts';
 import { getThaiFontFamily } from './InvoiceDocumentPaper.tsx';
 import {
@@ -23,7 +24,9 @@ import {
   MessageSquare,
   ShieldAlert,
   Sparkles,
-  Type
+  Type,
+  Database,
+  FileCode
 } from 'lucide-react';
 
 interface Props {
@@ -1296,6 +1299,64 @@ export const SettingsView: React.FC<Props> = ({
             รีเซ็ตค่าเริ่มต้นตามตัวอย่าง
           </button>
         </div>
+
+        {/* Cloudflare D1 Serverless SQL Settings & Actions */}
+        <div className="mt-4 pt-4 border-t border-white/10 bg-white/5 p-4 rounded-xl space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-blue-300 font-bold text-xs sm:text-sm">
+              <Database className="w-4 h-4 text-emerald-400" />
+              <span>การเชื่อมต่อฐานข้อมูล Cloudflare D1 (Serverless SQL)</span>
+              <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] px-2 py-0.5 rounded-full font-normal">
+                Active
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const invoices = StorageService.getInvoices();
+                CloudflareD1Service.downloadD1SqlFile(invoices, formData);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-md"
+              title="ดาวน์โหลดโครงสร้างและข้อมูลเอกสารทั้งหมดในรูปแบบคำสั่ง Cloudflare D1 SQL"
+            >
+              <FileCode className="w-3.5 h-3.5" />
+              ดาวน์โหลด Cloudflare D1 SQL (.sql)
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label className="block text-slate-300 text-[11px] mb-1">D1 Database ID / Name:</label>
+              <input
+                type="text"
+                value={formData.cloudflareD1DatabaseId || 'as-power-invoices-d1'}
+                onChange={e => handleInputChange('cloudflareD1DatabaseId', e.target.value)}
+                className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+                placeholder="as-power-invoices-d1"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-300 text-[11px] mb-1">Cloudflare Account ID (อุปกรณ์เชื่อมโยง):</label>
+              <input
+                type="text"
+                value={formData.cloudflareAccountId || ''}
+                onChange={e => handleInputChange('cloudflareAccountId', e.target.value)}
+                className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+                placeholder="ระบุ Cloudflare Account ID หรือเว้นว่าง"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-300 text-[11px] mb-1">Worker URL Endpoint (ถ้ามี):</label>
+              <input
+                type="text"
+                value={formData.cloudflareWorkerUrl || ''}
+                onChange={e => handleInputChange('cloudflareWorkerUrl', e.target.value)}
+                className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+                placeholder="https://d1-sync.yourworker.workers.dev"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Section 6: ประวัติการสำรองข้อมูล (Backup Audit Logs) */}
@@ -1317,14 +1378,22 @@ export const SettingsView: React.FC<Props> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {backupLogs.slice(0, 5).map(log => (
+              {backupLogs.slice(0, 7).map(log => (
                 <tr key={log.id} className="hover:bg-slate-50">
                   <td className="py-2.5 px-3 font-mono text-slate-600">
                     {new Date(log.timestamp).toLocaleString('th-TH')}
                   </td>
                   <td className="py-2.5 px-3">
                     <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-medium text-[11px]">
-                      {log.type === 'daily_auto' ? 'คลาวด์ประจำวัน' : log.type === 'hybrid_cloud' ? 'ไฮบริดคลาวด์' : 'สำรองโดยผู้ใช้'}
+                      {log.type === 'daily_auto'
+                        ? 'คลาวด์ประจำวัน'
+                        : log.type === 'hybrid_cloud'
+                        ? 'ไฮบริดคลาวด์'
+                        : log.type === 'cloudflare_d1'
+                        ? 'Cloudflare D1'
+                        : log.type === 'word_import'
+                        ? 'นำเข้า Word / D1'
+                        : 'สำรองโดยผู้ใช้'}
                     </span>
                   </td>
                   <td className="py-2.5 px-3 text-center font-mono font-semibold">

@@ -101,7 +101,15 @@ export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
   companyHeaderFontSize: 18,
   documentBaseFontSize: 14.5,
   stampPosition: 'center',
-  stampOpacity: 0.82
+  stampOpacity: 0.82,
+
+  // Cloudflare D1 integration
+  cloudflareD1Enabled: true,
+  cloudflareAccountId: '',
+  cloudflareD1DatabaseId: 'as-power-invoices-d1',
+  cloudflareApiToken: '',
+  cloudflareWorkerUrl: '',
+  lastD1SyncDate: new Date().toISOString()
 };
 
 // Initial Seed Documents including the exact sample 690010 and full 12-month distribution

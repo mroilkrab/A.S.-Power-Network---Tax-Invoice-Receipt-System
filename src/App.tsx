@@ -294,17 +294,6 @@ export default function App() {
             >
               <PlusCircle className="w-5 h-5" />
             </button>
-
-            {/* User Profile */}
-            <div className="hidden lg:flex items-center gap-2 pl-2 border-l border-slate-200 text-xs">
-              <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-slate-700 font-bold">
-                {currentUser.name.charAt(0)}
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-slate-800 leading-tight truncate max-w-[120px]">{currentUser.name}</p>
-                <p className="text-[10px] text-slate-500">{currentUser.email}</p>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -411,6 +400,7 @@ export default function App() {
             }}
             onDeleteInvoice={handleDeleteInvoice}
             onDuplicateInvoice={handleDuplicateInvoice}
+            onRefreshInvoices={() => setInvoices(StorageService.getInvoices())}
           />
         )}
 
