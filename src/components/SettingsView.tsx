@@ -715,6 +715,34 @@ export const SettingsView: React.FC<Props> = ({
               />
             </div>
             
+            {/* Logo Size on A4 Option */}
+            <div className="pt-2 border-t border-slate-100 space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-700">
+                ขนาดโลโก้บนหัวกระดาษ A4 (Print Logo Size)
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'medium', label: 'ปานกลาง (80px)', desc: 'กะทัดรัด' },
+                  { id: 'large', label: 'ขนาดใหญ่ (96px)', desc: 'แนะนำสำหรับ A4' },
+                  { id: 'xlarge', label: 'ใหญ่พิเศษ (112px)', desc: 'เด่นชัดเป็นพิเศษ' }
+                ].map(opt => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => handleInputChange('headerLogoSize', opt.id)}
+                    className={`p-2 rounded-lg border text-left cursor-pointer transition-all ${
+                      (formData.headerLogoSize || 'large') === opt.id
+                        ? 'border-blue-600 bg-blue-50/70 text-blue-900 ring-1 ring-blue-500'
+                        : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="block text-xs font-bold leading-tight">{opt.label}</span>
+                    <span className="block text-[10px] text-slate-500 mt-0.5">{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer pt-1">
               <input
                 type="checkbox"
@@ -854,8 +882,22 @@ export const SettingsView: React.FC<Props> = ({
           <label className="block text-xs font-bold text-slate-800 mb-2">
             เลือกรูปแบบฟอนต์ (Font Family Selection):
           </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {[
+              {
+                id: 'angsananew',
+                name: 'Angsana New',
+                thaiName: 'อังศนา นิว',
+                badge: 'พิมพ์งานยอดนิยม',
+                desc: 'มาตรฐานเอกสารราชการ/ธุรกิจไทย'
+              },
+              {
+                id: 'angsanaupc',
+                name: 'AngsanaUPC',
+                thaiName: 'อังศนา ยูพีซี',
+                badge: 'ดั้งเดิมคลาสสิก',
+                desc: 'ฟอนต์การค้าดั้งเดิม กะทัดรัด คมชัด'
+              },
               {
                 id: 'baijamjuree',
                 name: 'Bai Jamjuree',
@@ -1152,6 +1194,31 @@ export const SettingsView: React.FC<Props> = ({
               value={formData.defaultNotes}
               onChange={e => handleInputChange('defaultNotes', e.target.value)}
               className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-800"
+            />
+          </div>
+
+          <div className="sm:col-span-6">
+            <div className="flex justify-between items-center mb-1">
+              <label className="block font-semibold text-slate-700">
+                พนักงานขายเริ่มต้น (Default Salesman)
+              </label>
+              {formData.defaultSalesman && (
+                <button
+                  type="button"
+                  onClick={() => handleInputChange('defaultSalesman', '')}
+                  className="text-[11px] text-rose-600 hover:text-rose-800 font-semibold cursor-pointer"
+                  title="ลบ/เว้นว่างพนักงานขายเริ่มต้น"
+                >
+                  ลบ/เว้นว่าง
+                </button>
+              )}
+            </div>
+            <input
+              type="text"
+              placeholder="เช่น นายอภิวัฒน์ ส. หรือเว้นว่างหากไม่ระบุ"
+              value={formData.defaultSalesman ?? ''}
+              onChange={e => handleInputChange('defaultSalesman', e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-800 text-xs focus:ring-2 focus:ring-blue-500 outline-none"
             />
           </div>
 

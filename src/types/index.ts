@@ -73,6 +73,7 @@ export interface CompanySettings {
 
   // Logo, Signatures & Stamp
   logoUrl: string; // Header logo
+  headerLogoSize?: 'medium' | 'large' | 'xlarge'; // Header logo display size on A4
   showLogoOnPrint: boolean;
   stampUrl: string; // Official seal/stamp
   signatureUrl: string; // Authorized signatory
@@ -99,6 +100,7 @@ export interface CompanySettings {
   defaultPaymentTerms: string;
   defaultVatRate: number;
   defaultWithholdingTaxRate: number;
+  defaultSalesman?: string;
 
   // Numbering & Backups
   invoicePrefix: string;
@@ -108,8 +110,8 @@ export interface CompanySettings {
   dailyBackupNotification: boolean;
 
   // Font & Readability Settings
-  fontFamilyChoice?: 'baijamjuree' | 'sarabun' | 'prompt' | 'browallia' | 'kanit' | 'system';
-  systemFontFamilyChoice?: 'baijamjuree' | 'sarabun' | 'prompt' | 'browallia' | 'kanit' | 'system';
+  fontFamilyChoice?: 'angsananew' | 'angsanaupc' | 'angsana' | 'baijamjuree' | 'sarabun' | 'prompt' | 'browallia' | 'kanit' | 'system';
+  systemFontFamilyChoice?: 'angsananew' | 'angsanaupc' | 'angsana' | 'baijamjuree' | 'sarabun' | 'prompt' | 'browallia' | 'kanit' | 'system';
   fontScalePreset?: 'standard' | 'comfortable' | 'large';
   companyHeaderFontSize?: number; // e.g. 18, 20, 22
   documentBaseFontSize?: number; // e.g. 13.5, 14.5, 16

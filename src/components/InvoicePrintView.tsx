@@ -83,11 +83,13 @@ export const InvoicePrintView: React.FC<Props> = ({ invoice, settings, onBack, o
             className="bg-white border border-slate-300 text-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer shadow-xs"
             title="เปลี่ยนฟอนต์ของเอกสาร (Font Family)"
           >
-            <option value="baijamjuree">Bai Jamjuree (ใบจามจุรี - แนะนำ)</option>
-            <option value="sarabun">Sarabun (สารบัญ)</option>
+            <option value="angsananew">Angsana New (อังศนา นิว - มาตรฐานเอกสาร)</option>
+            <option value="angsanaupc">AngsanaUPC (อังศนา ยูพีซี - คลาสสิก)</option>
+            <option value="baijamjuree">Bai Jamjuree (ใบจามจุรี - โมเดิร์น)</option>
+            <option value="sarabun">Sarabun (สารบัญ - ราชการ)</option>
             <option value="prompt">Prompt (พร้อมท์)</option>
             <option value="kanit">Kanit (คณิต)</option>
-            <option value="browallia">Browallia New (ดั้งเดิม)</option>
+            <option value="browallia">Browallia New (บราวเวอร์เลีย)</option>
             <option value="system">ระบบดั้งเดิม (System)</option>
           </select>
 
@@ -183,16 +185,18 @@ export const InvoicePrintView: React.FC<Props> = ({ invoice, settings, onBack, o
       </div>
 
       {/* Main Standard Document View (Centered Full Paper) */}
-      <InvoiceDocumentPaper
-        invoice={invoice}
-        settings={{ ...settings, fontFamilyChoice: activeFontFamily }}
-        docType={docType}
-        isNonVatCustomer={isNonVatCustomer}
-        showStamp={showStamp}
-        showSignature={showSignature}
-        inModal={false}
-        fontScaleDelta={fontScaleDelta}
-      />
+      <div className="flex justify-center pb-12">
+        <InvoiceDocumentPaper
+          invoice={invoice}
+          settings={{ ...settings, fontFamilyChoice: activeFontFamily }}
+          docType={docType}
+          isNonVatCustomer={isNonVatCustomer}
+          showStamp={showStamp}
+          showSignature={showSignature}
+          inModal={false}
+          fontScaleDelta={fontScaleDelta}
+        />
+      </div>
 
       {/* ========================================================= */}
       {/* Dedicated A4 Print Preview Modal with Explicit Margins     */}

@@ -11,13 +11,49 @@
 }
 
 .font-document {
-  font-family: 'Browallia New', 'BrowalliaUPC', 'Bai Jamjuree', 'Sarabun', Tahoma, sans-serif;
+  font-family: 'Angsana New', 'AngsanaUPC', 'Browallia New', 'BrowalliaUPC', 'Bai Jamjuree', 'Sarabun', Tahoma, sans-serif;
   font-size: 13.5pt;
   line-height: 1.3;
+  word-break: normal;
+  overflow-wrap: break-word;
+  text-wrap: pretty;
+}
+
+.font-angsana {
+  font-family: 'Angsana New', 'AngsanaUPC', 'TH Sarabun New', 'Sarabun', 'Bai Jamjuree', Tahoma, sans-serif;
+}
+
+.font-angsanaupc {
+  font-family: 'AngsanaUPC', 'Angsana New', 'TH Sarabun New', 'Sarabun', 'Bai Jamjuree', Tahoma, sans-serif;
 }
 
 .font-browallia {
   font-family: 'Browallia New', 'BrowalliaUPC', 'Bai Jamjuree', 'Sarabun', Tahoma, sans-serif;
+}
+
+/* Local declarations for Angsana New & AngsanaUPC with system fallbacks */
+@font-face {
+  font-family: 'Angsana New';
+  src: local('Angsana New'), local('AngsanaNew'), local('Angsana New Bold');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'AngsanaUPC';
+  src: local('AngsanaUPC'), local('Angsana UPC'), local('AngsanaUPC Bold');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Thai Typographic line and word breaking rules */
+.thai-wrap-clean {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  text-wrap: pretty;
+  line-break: strict;
 }
 
 @media print {
@@ -38,6 +74,8 @@
     overflow: hidden !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    word-break: normal;
+    overflow-wrap: break-word;
   }
 
   .no-print {
@@ -64,6 +102,10 @@
     break-after: avoid !important;
     overflow: hidden !important;
     transform: none !important;
+    word-break: normal;
+    overflow-wrap: break-word;
+    text-wrap: pretty;
+    line-break: strict;
   }
 
   /* Prevent browser default headers/footers */

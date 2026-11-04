@@ -61,6 +61,7 @@ export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
 
   // Logo, Signatures & Stamp
   logoUrl: DEFAULT_STAMP_SVG,
+  headerLogoSize: 'large',
   showLogoOnPrint: true,
   stampUrl: DEFAULT_STAMP_SVG,
   signatureUrl: DEFAULT_SIGNATURE_SVG,
@@ -87,6 +88,7 @@ export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
   defaultPaymentTerms: 'กำหนดชำระเงินภายใน 30 วัน',
   defaultVatRate: 7,
   defaultWithholdingTaxRate: 0,
+  defaultSalesman: 'นายอภิวัฒน์ ส.',
 
   invoicePrefix: '69',
   nextNumber: 690011,
@@ -94,12 +96,12 @@ export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
   lastBackupDate: new Date().toISOString(),
   dailyBackupNotification: true,
 
-  // Font & Readability Settings Defaults (Comfortable & Clear)
-  fontFamilyChoice: 'baijamjuree',
-  systemFontFamilyChoice: 'baijamjuree',
+  // Font & Readability Settings Defaults (Comfortable & Perfectly Sized for A4)
+  fontFamilyChoice: 'angsananew',
+  systemFontFamilyChoice: 'angsananew',
   fontScalePreset: 'comfortable',
-  companyHeaderFontSize: 18,
-  documentBaseFontSize: 14.5,
+  companyHeaderFontSize: 16,
+  documentBaseFontSize: 12.5,
   stampPosition: 'center',
   stampOpacity: 0.82,
 
