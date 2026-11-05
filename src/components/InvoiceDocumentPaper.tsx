@@ -99,8 +99,8 @@ export const InvoiceDocumentPaper: React.FC<InvoiceDocumentPaperProps> = ({
     <div
       className={`invoice-paper font-document bg-white text-slate-900 leading-snug relative selection:bg-blue-100 ${
         inModal
-          ? 'w-[210mm] max-w-[210mm] min-h-[297mm] print:min-h-0 print:w-full print:max-w-full p-[8mm_10mm_6mm_10mm] print:p-0 shadow-2xl mx-auto border border-slate-300 relative transition-transform overflow-hidden print:overflow-visible'
-          : 'w-full max-w-[210mm] min-h-[297mm] print:min-h-0 print:w-full print:max-w-full p-[8mm_10mm_6mm_10mm] print:p-0 shadow-xl border border-slate-300 mx-auto relative rounded-xs transition-transform overflow-hidden print:overflow-visible'
+          ? 'w-[210mm] max-w-[210mm] min-h-[297mm] print:min-h-0 print:w-full print:max-w-full p-[8mm_10mm_6mm_10mm] print:p-0 shadow-2xl mx-auto border border-slate-300 print:border-none print:shadow-none relative transition-transform overflow-hidden print:overflow-visible'
+          : 'w-full max-w-[210mm] min-h-[297mm] print:min-h-0 print:w-full print:max-w-full p-[8mm_10mm_6mm_10mm] print:p-0 shadow-xl border border-slate-300 print:border-none print:shadow-none mx-auto relative rounded-xs transition-transform overflow-hidden print:overflow-visible'
       }`}
       style={{
         fontFamily: currentFontFamily,
@@ -133,16 +133,16 @@ export const InvoiceDocumentPaper: React.FC<InvoiceDocumentPaperProps> = ({
 
       {/* Top Header with Official Logo & Company Info */}
       <div className="flex justify-between items-start border-b-2 border-slate-800 pb-2 mb-2 print:pb-1.5 print:mb-1 gap-2">
-        <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0 pr-2">
+        <div className="flex items-start gap-3 flex-1 min-w-0 pr-2">
           {/* Header Logo */}
           {settings.showLogoOnPrint !== false && (settings.logoUrl || settings.stampUrl) && (
             <div
               className={`shrink-0 flex items-center justify-center p-1 print:p-0.5 bg-white rounded border border-slate-200 print:border-slate-300 shadow-xs ${
                 settings.headerLogoSize === 'xlarge'
-                  ? 'w-22 h-22 sm:w-26 sm:h-26 print:w-22 print:h-22'
+                  ? 'w-24 h-24 print:w-22 print:h-22'
                   : settings.headerLogoSize === 'medium'
-                  ? 'w-16 h-16 sm:w-18 sm:h-18 print:w-16 print:h-16'
-                  : 'w-20 h-20 sm:w-22 sm:h-22 print:w-20 print:h-20'
+                  ? 'w-16 h-16 print:w-16 print:h-16'
+                  : 'w-20 h-20 print:w-20 print:h-20'
               }`}
             >
               <img
@@ -247,7 +247,7 @@ export const InvoiceDocumentPaper: React.FC<InvoiceDocumentPaperProps> = ({
         style={{ fontSize: `${valuePt}pt` }}
       >
         {/* Left Column: Customer details (Perfect vertical alignment for all rows including Tax ID / Corporate Registration No.) */}
-        <div className="col-span-12 md:col-span-7">
+        <div className="col-span-7">
           <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 items-baseline">
             <span className="font-semibold text-slate-700 whitespace-nowrap">รหัสลูกค้า:</span>
             <span className="font-bold text-slate-900 tabular-nums">{invoice.customerCode || '-'}</span>
@@ -288,7 +288,7 @@ export const InvoiceDocumentPaper: React.FC<InvoiceDocumentPaperProps> = ({
         </div>
 
         {/* Right Column: Invoice Reference details */}
-        <div className="col-span-12 md:col-span-5 space-y-1 border-t md:border-t-0 md:border-l border-slate-300 pt-1.5 md:pt-0 md:pl-3">
+        <div className="col-span-5 space-y-1 border-l border-slate-300 pl-3">
           <div className="flex justify-between items-center bg-blue-50/60 p-1 border border-blue-200">
             <span className="font-bold text-blue-900 whitespace-nowrap">เลขที่เอกสาร:</span>
             <span
@@ -375,7 +375,7 @@ export const InvoiceDocumentPaper: React.FC<InvoiceDocumentPaperProps> = ({
       {/* Financial Calculation & Thai Baht Text Block */}
       <div className="grid grid-cols-12 border border-slate-800 mt-1.5 print:mt-1" style={{ fontSize: `${valuePt}pt` }}>
         {/* Left: Thai Baht Text & Payment method */}
-        <div className="col-span-12 sm:col-span-7 p-2 sm:p-2.5 print:p-1.5 border-b sm:border-b-0 sm:border-r border-slate-800 flex flex-col justify-between">
+        <div className="col-span-7 p-2 border-r border-slate-800 flex flex-col justify-between">
           <div>
             <span
               className="font-semibold text-slate-600 block mb-0.5 whitespace-nowrap"
@@ -384,7 +384,7 @@ export const InvoiceDocumentPaper: React.FC<InvoiceDocumentPaperProps> = ({
               จำนวนเงินตัวอักษร:
             </span>
             <div
-              className="p-1.5 sm:p-2 bg-slate-100 border border-slate-300 rounded font-bold text-blue-900 leading-snug break-words"
+              className="p-1.5 bg-slate-100 border border-slate-300 rounded font-bold text-blue-900 leading-snug break-words"
               style={{
                 fontSize: `${basePt + 0.5}pt`,
                 wordBreak: 'keep-all',
@@ -453,7 +453,7 @@ export const InvoiceDocumentPaper: React.FC<InvoiceDocumentPaperProps> = ({
         </div>
 
         {/* Right: Numbers breakdown */}
-        <div className="col-span-12 sm:col-span-5" style={{ fontSize: `${valuePt}pt` }}>
+        <div className="col-span-5" style={{ fontSize: `${valuePt}pt` }}>
           <div className="flex justify-between items-center py-1 px-2.5 print:py-0.5 border-b border-slate-300">
             <span className="font-semibold text-slate-700 whitespace-nowrap">รวมราคาสินค้า / บริการ:</span>
             <span className="tabular-nums font-medium whitespace-nowrap">{formatCurrency(invoice.subtotal)}</span>
@@ -607,7 +607,7 @@ export const InvoiceDocumentPaper: React.FC<InvoiceDocumentPaperProps> = ({
 
       {/* Standard Terms & Notes */}
       <div
-        className="mt-2.5 print:mt-1 pt-1.5 print:pt-0.5 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center text-slate-600 gap-1.5"
+        className="mt-2.5 print:mt-1 pt-1.5 print:pt-0.5 border-t border-slate-200 flex justify-between items-center text-slate-600 gap-1.5"
         style={{ fontSize: `${subTextPt}pt` }}
       >
         <p className="text-left flex-1">

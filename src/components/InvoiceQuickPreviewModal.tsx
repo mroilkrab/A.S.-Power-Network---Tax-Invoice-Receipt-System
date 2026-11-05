@@ -83,7 +83,10 @@ export const InvoiceQuickPreviewModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex flex-col justify-between overflow-hidden animate-in fade-in print:bg-white print:fixed print:inset-0 print:overflow-visible print:z-auto print:block">
+    <div
+      id="invoice-quick-preview-modal"
+      className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex flex-col justify-between overflow-hidden animate-in fade-in print:bg-white print:fixed print:inset-0 print:overflow-visible print:z-auto print:block"
+    >
       {/* Top Header & Quick Actions Bar */}
       <header className="no-print bg-slate-900 text-white px-4 sm:px-6 py-2.5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-lg">
         {/* Left: Document info & Navigation controls */}

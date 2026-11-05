@@ -69,12 +69,31 @@
     padding: 0 !important;
     background-color: #ffffff !important;
     color: #000000 !important;
-    font-size: 13pt;
-    overflow: hidden !important;
+    overflow: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    color-adjust: exact !important;
     word-break: normal;
     overflow-wrap: break-word;
+  }
+
+  /* Reset outer application containers so they don't add padding or margins around the printed sheet */
+  #root,
+  #root > div,
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+    background-color: #ffffff !important;
+    min-height: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* When preview modal is open during print, hide underlying app main content */
+  body:has(#invoice-quick-preview-modal) main {
+    display: none !important;
   }
 
   .no-print {
@@ -99,18 +118,24 @@
     break-before: avoid !important;
     page-break-after: avoid !important;
     break-after: avoid !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     transform: none !important;
     word-break: normal;
     overflow-wrap: break-word;
     text-wrap: pretty;
     line-break: strict;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
   }
 
-  /* Ensure consistent typography for Thai and English throughout print output */
+  /* Ensure consistent typography, background colors, and borders throughout print output */
   .invoice-paper,
   .invoice-paper * {
     font-family: inherit !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
   }
 
   .tabular-nums {

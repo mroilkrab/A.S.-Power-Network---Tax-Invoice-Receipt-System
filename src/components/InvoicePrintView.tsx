@@ -43,7 +43,7 @@ export const InvoicePrintView: React.FC<Props> = ({ invoice, settings, onBack, o
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 py-6 px-3 sm:px-6">
+    <div className="min-h-screen bg-slate-100 py-6 px-3 sm:px-6 print:min-h-0 print:bg-white print:p-0 print:m-0">
       {/* Action Toolbar (Hidden during print) */}
       <div className="no-print max-w-4xl mx-auto mb-6 bg-white p-4 rounded-xl shadow-md border border-slate-200 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -207,7 +207,7 @@ export const InvoicePrintView: React.FC<Props> = ({ invoice, settings, onBack, o
       </div>
 
       {/* Main Standard Document View (Centered Full Paper) */}
-      <div className="flex justify-center pb-12">
+      <div className="flex justify-center pb-12 print:p-0 print:m-0 print:block">
         <InvoiceDocumentPaper
           invoice={invoice}
           settings={{ ...settings, fontFamilyChoice: activeFontFamily }}

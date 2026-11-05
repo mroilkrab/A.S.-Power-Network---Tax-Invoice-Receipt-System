@@ -363,7 +363,7 @@ export default function App() {
       )}
 
       {/* Main Body Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 print:p-0 print:m-0 print:max-w-none print:w-full">
         {currentTab === 'dashboard' && (
           <Dashboard
             invoices={invoices}
