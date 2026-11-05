@@ -42,9 +42,9 @@ export const InvoiceQuickPreviewModal: React.FC<Props> = ({
   const [previewZoom, setPreviewZoom] = useState<'fit' | '100' | '85'>('fit');
   const [isNonVatCustomer, setIsNonVatCustomer] = useState(false);
 
-  // Dynamic font scale adjustment (+/- pt) for immediate comfort testing
-  const [fontScaleDelta, setFontScaleDelta] = useState<number>(0);
-  const [activeFontFamily, setActiveFontFamily] = useState<any>(settings.fontFamilyChoice || 'baijamjuree');
+  // Dynamic font size adjustment (0 to 100 pt)
+  const [customFontSize, setCustomFontSize] = useState<number>(settings.documentBaseFontSize || 12.5);
+  const [activeFontFamily, setActiveFontFamily] = useState<any>(settings.fontFamilyChoice || 'angsananew');
 
   // Keyboard navigation: Escape to close, ArrowLeft for Prev, ArrowRight for Next
   useEffect(() => {
@@ -153,31 +153,54 @@ export const InvoiceQuickPreviewModal: React.FC<Props> = ({
             <option value="system">ระบบดั้งเดิม (System)</option>
           </select>
 
-          {/* Font Size Adjuster (A- / A+) for Readability */}
-          <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5" title="ปรับขนาดฟอนต์ให้อ่านสบายตา">
-            <span className="px-2 text-[11px] font-semibold text-slate-400 flex items-center gap-1">
+          {/* Font Size Adjuster (0 - 100 pt) */}
+          <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-1 gap-1.5" title="ปรับขนาดตัวอักษร 0 - 100 pt">
+            <span className="px-1.5 text-[11px] font-bold text-slate-300 flex items-center gap-1">
               <Type className="w-3.5 h-3.5 text-blue-400" />
               ขนาด:
             </span>
             <button
               type="button"
-              onClick={() => setFontScaleDelta(prev => Math.max(-2, prev - 1))}
-              className="px-2 py-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded text-xs font-bold cursor-pointer"
-              title="ลดขนาดตัวอักษร"
+              onClick={() => setCustomFontSize(prev => Math.max(0, Math.round((prev - 0.5) * 10) / 10))}
+              className="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-xs font-bold cursor-pointer transition-colors"
+              title="ลดขนาดตัวอักษร (-0.5 pt)"
             >
-              A-
+              -
             </button>
-            <span className="px-1.5 py-0.5 bg-slate-900 rounded font-mono text-[11px] text-blue-300 min-w-10 text-center">
-              {fontScaleDelta === 0 ? 'ปกติ' : fontScaleDelta > 0 ? `+${fontScaleDelta}pt` : `${fontScaleDelta}pt`}
-            </span>
+            <div className="flex items-center">
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={0.5}
+                value={customFontSize}
+                onChange={e => {
+                  const val = Number(e.target.value);
+                  setCustomFontSize(isNaN(val) ? 12.5 : Math.max(0, Math.min(100, val)));
+                }}
+                className="w-12 text-center text-xs font-bold font-mono text-blue-300 border border-slate-600 rounded py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-slate-900"
+                title="กรอกขนาดตัวอักษร 0 - 100 pt ได้โดยตรง"
+              />
+              <span className="text-[10px] text-slate-400 font-mono ml-0.5">pt</span>
+            </div>
             <button
               type="button"
-              onClick={() => setFontScaleDelta(prev => Math.min(4, prev + 1))}
-              className="px-2 py-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded text-xs font-bold cursor-pointer"
-              title="เพิ่มขนาดตัวอักษรให้อ่านง่ายสบายตา"
+              onClick={() => setCustomFontSize(prev => Math.min(100, Math.round((prev + 0.5) * 10) / 10))}
+              className="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-xs font-bold cursor-pointer transition-colors"
+              title="เพิ่มขนาดตัวอักษร (+0.5 pt)"
             >
-              A+
+              +
             </button>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={0.5}
+              value={customFontSize}
+              onChange={e => setCustomFontSize(Number(e.target.value))}
+              className="w-16 sm:w-20 accent-blue-500 cursor-pointer hidden md:block"
+              title="สไลเดอร์ปรับขนาด 0 - 100 pt"
+            />
           </div>
 
           {/* Original vs Copy */}
@@ -308,7 +331,7 @@ export const InvoiceQuickPreviewModal: React.FC<Props> = ({
           showMargins={showMargins}
           inModal={true}
           previewZoom={previewZoom}
-          fontScaleDelta={fontScaleDelta}
+          fontSizeOverride={customFontSize}
         />
       </div>
 

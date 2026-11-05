@@ -999,50 +999,72 @@ export const SettingsView: React.FC<Props> = ({
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label className="text-xs font-semibold text-slate-700">
-                  ขนาดชื่อบริษัท หัวกระดาษ (Company Name Header Size):
+                  ขนาดชื่อบริษัท หัวกระดาษ (Company Header Size 0-100):
                 </label>
-                <span className="font-mono font-bold text-blue-700 text-xs bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                  {formData.companyHeaderFontSize || 18} pt
-                </span>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.5"
+                    value={formData.companyHeaderFontSize || 16}
+                    onChange={e => handleInputChange('companyHeaderFontSize', Number(e.target.value))}
+                    className="w-14 text-center font-mono font-bold text-blue-700 text-xs bg-blue-50 px-1 py-0.5 rounded border border-blue-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <span className="text-[11px] font-mono text-slate-500">pt</span>
+                </div>
               </div>
               <input
                 type="range"
-                min="16"
-                max="24"
-                step="1"
-                value={formData.companyHeaderFontSize || 18}
+                min="0"
+                max="100"
+                step="0.5"
+                value={formData.companyHeaderFontSize || 16}
                 onChange={e => handleInputChange('companyHeaderFontSize', Number(e.target.value))}
                 className="w-full accent-blue-600 cursor-pointer"
               />
               <div className="flex justify-between text-[10px] text-slate-400">
-                <span>16 pt (กะทัดรัด)</span>
-                <span>18 pt (มาตรฐานพอดีคำ)</span>
+                <span>0 pt</span>
+                <span>12 pt (พอดี A4)</span>
+                <span>16 pt (แนะนำ)</span>
                 <span>24 pt (เด่นชัด)</span>
+                <span>100 pt</span>
               </div>
             </div>
 
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label className="text-xs font-semibold text-slate-700">
-                  ขนาดตัวอักษรเนื้อหาเอกสาร (Base Document Font Size):
+                  ขนาดตัวอักษรเนื้อหาเอกสาร (Base Font Size 0-100):
                 </label>
-                <span className="font-mono font-bold text-blue-700 text-xs bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                  {formData.documentBaseFontSize || 14.5} pt
-                </span>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.5"
+                    value={formData.documentBaseFontSize || 12.5}
+                    onChange={e => handleInputChange('documentBaseFontSize', Number(e.target.value))}
+                    className="w-14 text-center font-mono font-bold text-blue-700 text-xs bg-blue-50 px-1 py-0.5 rounded border border-blue-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <span className="text-[11px] font-mono text-slate-500">pt</span>
+                </div>
               </div>
               <input
                 type="range"
-                min="12.5"
-                max="17.5"
+                min="0"
+                max="100"
                 step="0.5"
-                value={formData.documentBaseFontSize || 14.5}
+                value={formData.documentBaseFontSize || 12.5}
                 onChange={e => handleInputChange('documentBaseFontSize', Number(e.target.value))}
                 className="w-full accent-blue-600 cursor-pointer"
               />
               <div className="flex justify-between text-[10px] text-slate-400">
-                <span>12.5 pt</span>
-                <span>14.5 pt (สบายตา)</span>
-                <span>17.5 pt (ใหญ่พิเศษ)</span>
+                <span>0 pt</span>
+                <span>11 pt (กะทัดรัด)</span>
+                <span>12.5 pt (พอดี A4)</span>
+                <span>15 pt (สบายตา)</span>
+                <span>100 pt</span>
               </div>
             </div>
 

@@ -106,6 +106,7 @@ export const InvoiceDocumentPaper: React.FC<InvoiceDocumentPaperProps> = ({
         fontFamily: currentFontFamily,
         fontSize: `${basePt}pt`,
         lineHeight: isAngsanaFamily ? 1.28 : 1.25,
+        fontVariantNumeric: 'tabular-nums',
         boxSizing: 'border-box',
         ...(inModal && previewZoom !== 'fit'
           ? { transform: `scale(${previewZoom === '100' ? 1 : 0.85})`, transformOrigin: 'top center' }
@@ -171,28 +172,31 @@ export const InvoiceDocumentPaper: React.FC<InvoiceDocumentPaperProps> = ({
                 ({settings.branch})
               </span>
             </h1>
-            <p
-              className="mt-0.5 text-slate-700 leading-snug break-words"
-              style={{ fontSize: `${labelPt}pt`, wordBreak: 'normal', overflowWrap: 'break-word' }}
-            >
-              <span className="font-semibold whitespace-nowrap">ที่อยู่:</span> {settings.address}
-            </p>
-            <div
-              className="flex flex-wrap items-center gap-x-4 gap-y-0.5 mt-0.5 text-slate-800"
-              style={{ fontSize: `${labelPt}pt` }}
-            >
-              <p className="break-words">
-                <span className="font-semibold whitespace-nowrap">เลขประจำตัวผู้เสียภาษีอากร:</span>{' '}
-                <span className="font-mono tracking-wider font-bold whitespace-nowrap">{settings.taxId}</span>
-                {settings.branchCode && (
-                  <span className="ml-2 text-slate-600 whitespace-nowrap">/ สาขาที่ {settings.branchCode}</span>
-                )}
-              </p>
-              {settings.phone && (
-                <p className="whitespace-nowrap">
-                  <span className="font-semibold">โทร:</span> {settings.phone}
+            <div className="mt-1 space-y-0.5 text-slate-800" style={{ fontSize: `${labelPt}pt` }}>
+              <div className="flex items-baseline gap-2">
+                <span className="font-semibold whitespace-nowrap shrink-0">ที่อยู่:</span>
+                <span className="leading-snug break-words">{settings.address}</span>
+              </div>
+              <div className="flex flex-wrap items-baseline gap-x-4 gap-y-0.5 pt-0.5">
+                <p className="break-words">
+                  <span className="font-semibold whitespace-nowrap">เลขประจำตัวผู้เสียภาษีอากร:</span>{' '}
+                  <span className="tabular-nums font-bold tracking-wide whitespace-nowrap">{settings.taxId}</span>
+                  {settings.branchCode && (
+                    <span className="ml-2 text-slate-600 whitespace-nowrap">/ สาขาที่ {settings.branchCode}</span>
+                  )}
                 </p>
-              )}
+                {settings.businessRegistrationNo && settings.businessRegistrationNo !== settings.taxId && (
+                  <p className="break-words">
+                    <span className="font-semibold whitespace-nowrap">เลขทะเบียนนิติบุคคล:</span>{' '}
+                    <span className="tabular-nums font-bold whitespace-nowrap">{settings.businessRegistrationNo}</span>
+                  </p>
+                )}
+                {settings.phone && (
+                  <p className="whitespace-nowrap">
+                    <span className="font-semibold">โทร:</span> <span>{settings.phone}</span>
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -204,7 +208,7 @@ export const InvoiceDocumentPaper: React.FC<InvoiceDocumentPaperProps> = ({
           >
             {docType === 'original' ? 'ต้นฉบับ / ORIGINAL' : 'สำเนา / COPY'}
           </div>
-          <div className="text-slate-500 font-mono whitespace-nowrap" style={{ fontSize: `${subTextPt}pt` }}>
+          <div className="text-slate-500 whitespace-nowrap" style={{ fontSize: `${subTextPt}pt` }}>
             {isNonVatCustomer ? '(เอกสารสำหรับลูกค้าไม่จด VAT)' : '(เอกสารออกเป็นชุด)'}
           </div>
         </div>
@@ -237,50 +241,50 @@ export const InvoiceDocumentPaper: React.FC<InvoiceDocumentPaperProps> = ({
         )}
       </div>
 
-      {/* Document Metadata Grid (Fixed overlap & clean flexible columns) */}
+      {/* Document Metadata Grid (Fixed overlap & clean aligned columns) */}
       <div
         className="grid grid-cols-12 gap-2 my-2 print:my-1.5 p-2 sm:p-2.5 print:p-1.5 bg-slate-50/70 border border-slate-300 rounded-sm"
         style={{ fontSize: `${valuePt}pt` }}
       >
-        {/* Left Column: Customer details */}
-        <div className="col-span-12 md:col-span-7 space-y-1">
-          <div className="flex items-baseline gap-2">
-            <span className="w-24 sm:w-28 shrink-0 font-semibold text-slate-700 whitespace-nowrap">รหัสลูกค้า:</span>
-            <span className="font-bold text-slate-900 font-mono">{invoice.customerCode || '-'}</span>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="w-24 sm:w-28 shrink-0 font-semibold text-slate-700 whitespace-nowrap">ชื่อลูกค้า:</span>
+        {/* Left Column: Customer details (Perfect vertical alignment for all rows including Tax ID / Corporate Registration No.) */}
+        <div className="col-span-12 md:col-span-7">
+          <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 items-baseline">
+            <span className="font-semibold text-slate-700 whitespace-nowrap">รหัสลูกค้า:</span>
+            <span className="font-bold text-slate-900 tabular-nums">{invoice.customerCode || '-'}</span>
+
+            <span className="font-semibold text-slate-700 whitespace-nowrap">ชื่อลูกค้า:</span>
             <span
-              className="font-bold text-slate-900 break-words leading-tight flex-1"
+              className="font-bold text-slate-900 break-words leading-tight"
               style={{ wordBreak: 'keep-all', overflowWrap: 'break-word', textWrap: 'pretty' }}
             >
               {invoice.customerName}
             </span>
-          </div>
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="font-semibold text-slate-700 whitespace-nowrap shrink-0">เลขประจำตัวผู้เสียภาษี:</span>
-            <span className="font-mono font-bold tracking-wide text-slate-900 whitespace-nowrap">
-              {isNonVatCustomer
-                ? invoice.customerTaxId || 'ไม่อยู่ในระบบภาษีมูลค่าเพิ่ม'
-                : invoice.customerTaxId || '-'}
-            </span>
-            <span className="text-slate-600 whitespace-nowrap">({invoice.customerBranch || 'สำนักงานใหญ่'})</span>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="w-24 sm:w-28 shrink-0 font-semibold text-slate-700 whitespace-nowrap">ที่อยู่:</span>
+
+            <span className="font-semibold text-slate-700 whitespace-nowrap">เลขประจำตัวผู้เสียภาษี:</span>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="tabular-nums font-bold tracking-wide text-slate-900 whitespace-nowrap">
+                {isNonVatCustomer
+                  ? invoice.customerTaxId || 'ไม่อยู่ในระบบภาษีมูลค่าเพิ่ม'
+                  : invoice.customerTaxId || '-'}
+              </span>
+              <span className="text-slate-600 whitespace-nowrap">({invoice.customerBranch || 'สำนักงานใหญ่'})</span>
+            </div>
+
+            <span className="font-semibold text-slate-700 whitespace-nowrap">ที่อยู่:</span>
             <span
-              className="text-slate-800 leading-snug break-words flex-1"
+              className="text-slate-800 leading-snug break-words"
               style={{ wordBreak: 'normal', overflowWrap: 'break-word' }}
             >
               {invoice.customerAddress || '-'}
             </span>
+
+            {invoice.customerPhone && (
+              <>
+                <span className="font-semibold text-slate-700 whitespace-nowrap">โทรศัพท์:</span>
+                <span className="text-slate-800 tabular-nums whitespace-nowrap">{invoice.customerPhone}</span>
+              </>
+            )}
           </div>
-          {invoice.customerPhone && (
-            <div className="flex items-baseline gap-2">
-              <span className="w-24 sm:w-28 shrink-0 font-semibold text-slate-700 whitespace-nowrap">โทรศัพท์:</span>
-              <span className="text-slate-800 whitespace-nowrap">{invoice.customerPhone}</span>
-            </div>
-          )}
         </div>
 
         {/* Right Column: Invoice Reference details */}
@@ -288,31 +292,28 @@ export const InvoiceDocumentPaper: React.FC<InvoiceDocumentPaperProps> = ({
           <div className="flex justify-between items-center bg-blue-50/60 p-1 border border-blue-200">
             <span className="font-bold text-blue-900 whitespace-nowrap">เลขที่เอกสาร:</span>
             <span
-              className="font-mono font-black text-blue-900 tracking-wider whitespace-nowrap"
+              className="tabular-nums font-black text-blue-900 tracking-wide whitespace-nowrap"
               style={{ fontSize: `${basePt + 1.5}pt` }}
             >
               {invoice.documentNo}
             </span>
           </div>
-          <div className="flex justify-between items-center gap-2">
-            <span className="font-semibold text-slate-700 whitespace-nowrap shrink-0">วันที่:</span>
-            <span className="font-medium text-slate-900 whitespace-nowrap">{invoice.documentDateThai}</span>
-          </div>
-          <div className="flex justify-between items-center gap-2">
-            <span className="font-semibold text-slate-700 whitespace-nowrap shrink-0">เลขที่ใบกำกับ:</span>
+          <div className="grid grid-cols-[auto_1fr] gap-x-2.5 gap-y-1 items-baseline pt-0.5">
+            <span className="font-semibold text-slate-700 whitespace-nowrap">วันที่:</span>
+            <span className="font-medium text-slate-900 whitespace-nowrap text-right">{invoice.documentDateThai}</span>
+
+            <span className="font-semibold text-slate-700 whitespace-nowrap">เลขที่ใบกำกับ:</span>
             <span className="font-medium text-slate-800 truncate text-right">
               {isNonVatCustomer ? '-' : invoice.referenceNo || '………………'}
             </span>
-          </div>
-          <div className="flex justify-between items-baseline gap-2 py-0.5">
-            <span className="font-semibold text-slate-700 whitespace-nowrap shrink-0">พนักงานขาย:</span>
+
+            <span className="font-semibold text-slate-700 whitespace-nowrap">พนักงานขาย:</span>
             <span className="font-medium text-slate-900 tracking-tight truncate text-right">
               {invoice.salesman && invoice.salesman.trim() !== '' ? invoice.salesman : '-'}
             </span>
-          </div>
-          <div className="flex justify-between items-center gap-2">
-            <span className="font-semibold text-slate-700 whitespace-nowrap shrink-0">วันครบกำหนดชำระ:</span>
-            <span className="font-medium text-slate-800 whitespace-nowrap">
+
+            <span className="font-semibold text-slate-700 whitespace-nowrap">วันครบกำหนดชำระ:</span>
+            <span className="font-medium text-slate-800 whitespace-nowrap text-right tabular-nums">
               {invoice.paymentDueDate ? invoice.paymentDueDate : '………………'}
             </span>
           </div>
@@ -338,7 +339,7 @@ export const InvoiceDocumentPaper: React.FC<InvoiceDocumentPaperProps> = ({
           <tbody>
             {invoice.items.map((item, idx) => (
               <tr key={item.id || idx} className="border-b border-slate-200/80 hover:bg-slate-50/50">
-                <td className="py-1.5 px-2 print:py-1 text-center border-r border-slate-300 font-mono whitespace-nowrap">{idx + 1}</td>
+                <td className="py-1.5 px-2 print:py-1 text-center border-r border-slate-300 tabular-nums whitespace-nowrap">{idx + 1}</td>
                 <td
                   className="py-1.5 px-3 print:py-1 border-r border-slate-300 font-medium text-slate-900 leading-snug break-words"
                   style={{ wordBreak: 'keep-all', overflowWrap: 'break-word', textWrap: 'pretty' }}
@@ -346,11 +347,11 @@ export const InvoiceDocumentPaper: React.FC<InvoiceDocumentPaperProps> = ({
                   {item.description}
                 </td>
                 <td className="py-1.5 px-2 print:py-1 text-center border-r border-slate-300 whitespace-nowrap">{item.unit || '-'}</td>
-                <td className="py-1.5 px-2 print:py-1 text-center border-r border-slate-300 font-mono whitespace-nowrap">{item.quantity}</td>
-                <td className="py-1.5 px-2 print:py-1 text-right border-r border-slate-300 font-mono whitespace-nowrap">
+                <td className="py-1.5 px-2 print:py-1 text-center border-r border-slate-300 tabular-nums whitespace-nowrap">{item.quantity}</td>
+                <td className="py-1.5 px-2 print:py-1 text-right border-r border-slate-300 tabular-nums whitespace-nowrap">
                   {formatCurrency(item.unitPrice)}
                 </td>
-                <td className="py-1.5 px-2 print:py-1 text-right font-mono font-semibold text-slate-900 whitespace-nowrap">
+                <td className="py-1.5 px-2 print:py-1 text-right tabular-nums font-semibold text-slate-900 whitespace-nowrap">
                   {formatCurrency(item.amount)}
                 </td>
               </tr>
@@ -455,14 +456,14 @@ export const InvoiceDocumentPaper: React.FC<InvoiceDocumentPaperProps> = ({
         <div className="col-span-12 sm:col-span-5" style={{ fontSize: `${valuePt}pt` }}>
           <div className="flex justify-between items-center py-1 px-2.5 print:py-0.5 border-b border-slate-300">
             <span className="font-semibold text-slate-700 whitespace-nowrap">รวมราคาสินค้า / บริการ:</span>
-            <span className="font-mono font-medium whitespace-nowrap">{formatCurrency(invoice.subtotal)}</span>
+            <span className="tabular-nums font-medium whitespace-nowrap">{formatCurrency(invoice.subtotal)}</span>
           </div>
 
           {/* Toggleable VAT Line based on Customer VAT registration status */}
           {!isNonVatCustomer ? (
             <div className="flex justify-between items-center py-1 px-2.5 print:py-0.5 border-b border-slate-300">
               <span className="font-semibold text-slate-700 whitespace-nowrap">บวก ภาษีมูลค่าเพิ่ม {invoice.vatRate}%:</span>
-              <span className="font-mono font-medium whitespace-nowrap">{formatCurrency(invoice.vatAmount)}</span>
+              <span className="tabular-nums font-medium whitespace-nowrap">{formatCurrency(invoice.vatAmount)}</span>
             </div>
           ) : (
             <div
@@ -470,13 +471,13 @@ export const InvoiceDocumentPaper: React.FC<InvoiceDocumentPaperProps> = ({
               style={{ fontSize: `${subTextPt}pt` }}
             >
               <span className="font-medium italic whitespace-nowrap">ภาษีมูลค่าเพิ่ม (Non-VAT Customer):</span>
-              <span className="font-mono font-semibold whitespace-nowrap">ไม่คิดภาษี 0.00</span>
+              <span className="tabular-nums font-semibold whitespace-nowrap">ไม่คิดภาษี 0.00</span>
             </div>
           )}
 
           <div className="flex justify-between items-center py-1 px-2.5 print:py-0.5 border-b border-slate-300 text-slate-600">
             <span className="whitespace-nowrap">หัก ภาษีหัก ณ ที่จ่าย {invoice.withholdingTaxRate ? `${invoice.withholdingTaxRate}%` : '-'}:</span>
-            <span className="font-mono whitespace-nowrap">
+            <span className="tabular-nums whitespace-nowrap">
               {invoice.withholdingTaxAmount > 0 ? `-${formatCurrency(invoice.withholdingTaxAmount)}` : '-'}
             </span>
           </div>
@@ -484,7 +485,7 @@ export const InvoiceDocumentPaper: React.FC<InvoiceDocumentPaperProps> = ({
           <div className="flex justify-between items-center py-1.5 px-2.5 print:py-1 bg-slate-200/90 font-bold text-slate-900 border-t border-slate-800">
             <span className="whitespace-nowrap">ยอดรวมสุทธิ (Grand Total):</span>
             <span
-              className="font-mono text-blue-900 whitespace-nowrap"
+              className="tabular-nums text-blue-900 whitespace-nowrap"
               style={{ fontSize: `${grandTotalPt}pt` }}
             >
               {formatCurrency(calculatedGrandTotal)}
@@ -613,7 +614,7 @@ export const InvoiceDocumentPaper: React.FC<InvoiceDocumentPaperProps> = ({
           <strong>หมายเหตุ:</strong> {invoice.notes || settings.defaultNotes || 'ได้รับสินค้าและบริการถูกต้องเรียบร้อยแล้ว ในกรณีชำระด้วยเช็คจะสมบูรณ์เมื่อธนาคารเรียกเก็บเงินเรียบร้อยแล้ว'}
         </p>
         {settings.website && (
-          <p className="font-mono text-slate-500 shrink-0">
+          <p className="tabular-nums text-slate-500 shrink-0">
             Web: {settings.website} {settings.lineId ? `| LINE: ${settings.lineId}` : ''}
           </p>
         )}

@@ -1,7 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { InvoiceDocument, InvoiceItem, CategoryType, PaymentMethod, CompanySettings, InvoiceStatus } from '../types/index.ts';
 import { numberToThaiBaht, toThaiDateString, formatCurrency } from '../utils/bahtText.ts';
-import { Plus, Trash2, ArrowLeft, Save, Sparkles, Building, User, Calendar, Calculator, X } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  ArrowLeft,
+  Save,
+  Sparkles,
+  Building,
+  User,
+  Calendar,
+  Calculator,
+  X,
+  UploadCloud,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  FileSpreadsheet,
+  Check,
+  RefreshCw,
+  FileCheck
+} from 'lucide-react';
+import { AiDocumentService, ExtractedInvoiceData } from '../services/aiDocumentService.ts';
 
 interface Props {
   initialData?: InvoiceDocument | null;
@@ -133,6 +154,129 @@ export const InvoiceForm: React.FC<Props> = ({
     setCustomerBranch(cust.branch || 'สำนักงานใหญ่');
   };
 
+  // ========================================================
+  // AI Document Analysis & Auto-Mapping State
+  // ========================================================
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [activeAiTab, setActiveAiTab] = useState<'upload' | 'text'>('upload');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [extractedData, setExtractedData] = useState<ExtractedInvoiceData | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [pastedText, setPastedText] = useState('');
+  const [aiSuccessToast, setAiSuccessToast] = useState<string | null>(null);
+
+  const sampleTemplates = [
+    {
+      label: 'ตัวอย่างใบสั่งซื้อ (PO) บจก. อาร์เอส คอนเน็ค',
+      text: `ใบสั่งซื้อ / PURCHASE ORDER (PO)
+เลขที่ใบสั่งซื้อ: PO-2026-1049
+วันที่เอกสาร: 2026-11-04
+ชื่อลูกค้า: บริษัท อาร์เอส คอนเน็ค จำกัด (สำนักงานใหญ่)
+รหัสลูกค้า: UNI - 001
+เลขประจำตัวผู้เสียภาษี: 0105544021316 สาขา: 00000 (สำนักงานใหญ่)
+ที่อยู่: เลขที่ 27 อาคาร เชษฐโชติ ทาวเวอร์ เอ ชั้นที่ 3 ถนนประเสริฐมนูกิจ แขวงเสนานิคม เขตจตุจักร กรุงเทพฯ 10900
+เบอร์โทร: 02-02-002-8888
+พนักงานผู้ติดต่อ: นายอภิวัฒน์ สาระสิทธิ์
+กำหนดชำระเงิน: 2026-11-30 ชำระโดย: โอนเงินผ่านธนาคาร
+
+รายการสินค้า / บริการ:
+1. ค่าบริการดูแลระบบคอมพิวเตอร์และเซิร์ฟเวอร์ ประจำเดือนพฤศจิกายน 2569 จำนวน 1 งาน หน่วยละ 25,000.00 บาท ยอด 25,000.00 บาท
+2. อุปกรณ์ Router Wi-Fi 6 Enterprise รองรับ 100+ ผู้ใช้ จำนวน 2 ชุด หน่วยละ 4,500.00 บาท ยอด 9,000.00 บาท
+หมายเหตุ: โครงการปรับปรุงระบบเน็ตเวิร์คสำนักงานใหญ่ หักภาษี ณ ที่จ่าย 3%`
+    },
+    {
+      label: 'ตัวอย่างสรุปค่าคอมมิชชั่นและการตลาด',
+      text: `ใบสรุปยอดค่าคอมมิชชั่น / การตลาด
+เลขที่อ้างอิง: COMM-2026-10
+วันที่: 2026-11-01
+ลูกค้า: บริษัท อาร์เอส คอนเน็ค จำกัด
+เลขประจำตัวผู้เสียภาษี: 0105544021316 สาขา สำนักงานใหญ่
+ที่อยู่: 27 อาคารเชษฐโชติ ทาวเวอร์ เอ แขวงเสนานิคม เขตจตุจักร กรุงเทพฯ
+โทร: 02-02-002-8888
+พนักงานขาย: นายอภิวัฒน์ สาระสิทธิ์
+ครบกำหนดชำระ: 2026-11-15
+
+รายการ:
+1. ค่าคอมมิชชั่น เดือน ตุลาคม พ.ศ. 2569 จำนวน 1 เดือน ราคา 35,562.22 บาท
+หมายเหตุ: ชำระโดยโอนเงิน หักภาษี ณ ที่จ่าย 3%`
+    }
+  ];
+
+  const handleProcessFile = async (file: File) => {
+    setIsAnalyzing(true);
+    setAiError(null);
+    setExtractedData(null);
+    setUploadedFileName(file.name);
+
+    try {
+      const data = await AiDocumentService.analyzeDocument(file);
+      setExtractedData(data);
+    } catch (err: any) {
+      console.error('Error analyzing document:', err);
+      setAiError(err.message || 'ไม่สามารถวิเคราะห์เอกสารได้ กรุณาลองใหม่อีกครั้ง');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleProcessPastedText = async () => {
+    if (!pastedText.trim()) {
+      setAiError('กรุณากรอกหรือวางข้อความเอกสารที่ต้องการวิเคราะห์');
+      return;
+    }
+    setIsAnalyzing(true);
+    setAiError(null);
+    setExtractedData(null);
+
+    try {
+      const data = await AiDocumentService.analyzeRawText(pastedText, 'ข้อความที่วาง');
+      setExtractedData(data);
+    } catch (err: any) {
+      console.error('Error analyzing text:', err);
+      setAiError(err.message || 'ไม่สามารถวิเคราะห์ข้อความได้');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleApplyAiData = (data: ExtractedInvoiceData) => {
+    if (data.customerName) setCustomerName(data.customerName);
+    if (data.customerTaxId) setCustomerTaxId(data.customerTaxId);
+    if (data.customerBranch) setCustomerBranch(data.customerBranch);
+    if (data.customerAddress) setCustomerAddress(data.customerAddress);
+    if (data.customerPhone) setCustomerPhone(data.customerPhone);
+    if (data.customerCode) setCustomerCode(data.customerCode);
+    if (data.documentDate) {
+      setDocumentDate(data.documentDate);
+      setDocumentDateThai(toThaiDateString(data.documentDate));
+    }
+    if (data.referenceNo) setReferenceNo(data.referenceNo);
+    if (data.salesman) setSalesman(data.salesman);
+    if (data.paymentDueDate) setPaymentDueDate(data.paymentDueDate);
+    if (data.paymentMethod) setPaymentMethod(data.paymentMethod);
+    if (data.notes) setNotes(data.notes);
+
+    if (data.items && data.items.length > 0) {
+      setItems(
+        data.items.map((it, idx) => ({
+          id: 'item-ai-' + Date.now() + '-' + idx,
+          itemNo: idx + 1,
+          description: it.description || '',
+          quantity: it.quantity || 1,
+          unit: it.unit || 'รายการ',
+          unitPrice: it.unitPrice || 0,
+          amount: it.amount || ((it.quantity || 1) * (it.unitPrice || 0)),
+          category: (it.category as any) || 'ค่าคอมมิชชั่นและการตลาด'
+        }))
+      );
+    }
+
+    setShowAiModal(false);
+    setAiSuccessToast(`จับคู่ข้อมูลเข้าแบบฟอร์มอัตโนมัติเรียบร้อย: ${data.customerName || 'ลูกค้า'}`);
+    setTimeout(() => setAiSuccessToast(null), 6000);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -206,7 +350,19 @@ export const InvoiceForm: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => {
+              setAiError(null);
+              setShowAiModal(true);
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md shadow-purple-500/20 cursor-pointer transition-all"
+            title="นำเข้าไฟล์ Word, PDF, รูปภาพ หรือข้อความเพื่อกรอกข้อมูลลงฟอร์มอัตโนมัติด้วย AI"
+          >
+            <Sparkles className="w-4 h-4 text-amber-300" />
+            <span>AI นำเข้าเอกสาร (Auto-Map)</span>
+          </button>
           <button
             type="button"
             onClick={onCancel}
@@ -223,6 +379,23 @@ export const InvoiceForm: React.FC<Props> = ({
           </button>
         </div>
       </div>
+
+      {/* AI Success Notification Toast */}
+      {aiSuccessToast && (
+        <div className="bg-emerald-50 border border-emerald-300 text-emerald-800 px-4 py-3 rounded-xl flex items-center justify-between text-xs font-medium animate-in fade-in shadow-sm">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{aiSuccessToast}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setAiSuccessToast(null)}
+            className="text-emerald-600 hover:text-emerald-900 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Customer Presets if available */}
       {existingCustomers.length > 0 && (
@@ -720,6 +893,368 @@ export const InvoiceForm: React.FC<Props> = ({
           </div>
         </div>
       </div>
+
+      {/* ========================================================= */}
+      {/* AI Document Auto-Map Modal                                */}
+      {/* ========================================================= */}
+      {showAiModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in">
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh]">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-5 flex items-start justify-between border-b border-indigo-900/40">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 bg-indigo-600/30 border border-indigo-400/40 rounded-xl text-indigo-300 shrink-0">
+                  <Sparkles className="w-6 h-6 text-amber-300" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base sm:text-lg font-bold text-white">
+                      AI วิเคราะห์และนำเข้าเอกสารอัตโนมัติ (Document Auto-Map)
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/40">
+                      Gemini 3.8 Flash
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                    อัปโหลดไฟล์ Word (.docx), PDF, รูปภาพเอกสาร หรือวางข้อความ AI จะวิเคราะห์และจับคู่ข้อมูลชื่อลูกค้า เลขผู้เสียภาษี ที่อยู่ วันที่ พนักงานขาย และรายการสินค้าลงแบบฟอร์มทันที
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isAnalyzing) setShowAiModal(false);
+                }}
+                disabled={isAnalyzing}
+                className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                title="ปิดหน้าต่าง"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-5 text-xs">
+              {/* Tabs Switcher */}
+              <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveAiTab('upload');
+                    setAiError(null);
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all cursor-pointer ${
+                    activeAiTab === 'upload'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  <UploadCloud className="w-4 h-4" />
+                  อัปโหลดไฟล์ (Word / PDF / รูปภาพ)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveAiTab('text');
+                    setAiError(null);
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all cursor-pointer ${
+                    activeAiTab === 'text'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  <FileText className="w-4 h-4" />
+                  วางข้อความ / รายละเอียดเอกสาร
+                </button>
+              </div>
+
+              {/* Error Message if any */}
+              {aiError && (
+                <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-xl flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold block">เกิดข้อผิดพลาดในการวิเคราะห์:</span>
+                    <span className="text-rose-700">{aiError}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Loading State Spinner */}
+              {isAnalyzing && (
+                <div className="py-10 flex flex-col items-center justify-center text-center space-y-3 bg-indigo-50/60 rounded-2xl border border-indigo-200/60">
+                  <div className="relative">
+                    <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
+                    <Sparkles className="w-4 h-4 text-amber-500 absolute -top-1 -right-1 animate-bounce" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-slate-900">
+                      กำลังใช้ AI วิเคราะห์ข้อมูลเอกสารและจับคู่ฟิลด์...
+                    </h4>
+                    <p className="text-[11px] text-slate-600 mt-1 max-w-md">
+                      ระบบกำลังสกัดชื่อลูกค้า, เลขประจำตัวผู้เสียภาษี 13 หลัก, สาขา, ที่อยู่, วันที่, พนักงานขาย และรายการสินค้า
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 1: File Upload */}
+              {!isAnalyzing && activeAiTab === 'upload' && !extractedData && (
+                <div className="space-y-4">
+                  <label className="border-2 border-dashed border-indigo-300 hover:border-indigo-500 bg-indigo-50/30 hover:bg-indigo-50/70 transition-all rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer text-center group">
+                    <input
+                      type="file"
+                      accept=".docx,.pdf,.png,.jpg,.jpeg,.webp,.txt,.csv"
+                      className="hidden"
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) handleProcessFile(file);
+                      }}
+                    />
+                    <div className="p-4 bg-indigo-100 group-hover:bg-indigo-200 text-indigo-700 rounded-2xl mb-3 transition-colors shadow-xs">
+                      <UploadCloud className="w-8 h-8" />
+                    </div>
+                    <span className="text-sm font-bold text-slate-800 mb-1">
+                      คลิกเพื่อเลือกไฟล์ หรือลากไฟล์มาวางที่นี่
+                    </span>
+                    <span className="text-xs text-slate-500 max-w-sm mb-3">
+                      รองรับไฟล์เอกสาร Word (.docx), PDF, รูปภาพใบเสร็จ/ใบกำกับภาษี (PNG, JPG, WebP), และไฟล์ข้อความ
+                    </span>
+                    <div className="flex items-center gap-2 flex-wrap justify-center">
+                      <span className="px-2.5 py-1 bg-white border border-slate-200 rounded-md text-[10.5px] font-mono text-slate-600 shadow-2xs">
+                        MS Word (.docx)
+                      </span>
+                      <span className="px-2.5 py-1 bg-white border border-slate-200 rounded-md text-[10.5px] font-mono text-slate-600 shadow-2xs">
+                        Adobe PDF (.pdf)
+                      </span>
+                      <span className="px-2.5 py-1 bg-white border border-slate-200 rounded-md text-[10.5px] font-mono text-slate-600 shadow-2xs">
+                        ภาพถ่ายเอกสาร (PNG / JPG)
+                      </span>
+                    </div>
+                  </label>
+
+                  {/* Or Quick Try Sample Data */}
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <span className="font-semibold text-slate-700 block mb-2 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                      หรือทดลองด้วยตัวอย่างข้อมูลจริง (1-Click Test):
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {sampleTemplates.map((sample, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setActiveAiTab('text');
+                            setPastedText(sample.text);
+                          }}
+                          className="px-3 py-1.5 bg-white hover:bg-indigo-50 border border-slate-300 hover:border-indigo-400 rounded-lg text-slate-700 font-medium transition-colors cursor-pointer text-left"
+                        >
+                          📄 {sample.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: Paste Text */}
+              {!isAnalyzing && activeAiTab === 'text' && !extractedData && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">
+                      วางข้อความจากใบเสนอราคา, ใบสั่งซื้อ (PO), แชท หรืออีเมล:
+                    </label>
+                    <textarea
+                      rows={8}
+                      value={pastedText}
+                      onChange={e => setPastedText(e.target.value)}
+                      placeholder="วางข้อความที่นี่ เช่น:&#10;ลูกค้า: บริษัท อาร์เอส คอนเน็ค จำกัด (สำนักงานใหญ่)&#10;เลขประจำตัวผู้เสียภาษี: 0105544021316&#10;ที่อยู่: เลขที่ 27 อาคาร เชษฐโชติ...&#10;รายการ: ค่าคอมมิชชั่น เดือน ตุลาคม จำนวน 1 เดือน ราคา 35,562.22 บาท..."
+                      className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl font-mono text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs"
+                    />
+                  </div>
+
+                  {/* Quick Sample Selector */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-slate-500 text-[11px] font-semibold">ใส่ตัวอย่างทดสอบ:</span>
+                    {sampleTemplates.map((sample, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setPastedText(sample.text)}
+                        className="px-2.5 py-1 bg-slate-100 hover:bg-indigo-100 border border-slate-200 rounded-lg text-[11px] text-slate-700 font-medium transition-colors cursor-pointer"
+                      >
+                        {sample.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="button"
+                      onClick={handleProcessPastedText}
+                      disabled={!pastedText.trim()}
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all cursor-pointer ${
+                        pastedText.trim()
+                          ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/20 active:scale-95'
+                          : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                      }`}
+                    >
+                      <Sparkles className="w-4 h-4 text-amber-300" />
+                      วิเคราะห์ข้อความด้วย AI
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* EXTRACTED PREVIEW RESULTS (When data extracted successfully) */}
+              {!isAnalyzing && extractedData && (
+                <div className="space-y-4">
+                  <div className="bg-emerald-50 border border-emerald-300 p-4 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-1.5 bg-emerald-600 text-white rounded-lg">
+                        <Check className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-sm text-emerald-900">
+                          วิเคราะห์ข้อมูลเอกสารสำเร็จ! ตรวจสอบผลลัพธ์ก่อนจับคู่ลงแบบฟอร์ม
+                        </h4>
+                        <p className="text-[11px] text-emerald-700">
+                          {uploadedFileName ? `แหล่งข้อมูล: ${uploadedFileName}` : 'แหล่งข้อมูล: ข้อความที่ระบุ'}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExtractedData(null);
+                        setUploadedFileName(null);
+                      }}
+                      className="text-xs text-emerald-800 hover:text-emerald-950 underline font-semibold cursor-pointer"
+                    >
+                      วิเคราะห์ใหม่
+                    </button>
+                  </div>
+
+                  {/* Customer Information Preview */}
+                  <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-3">
+                    <h5 className="font-bold text-slate-900 text-xs border-b border-slate-200 pb-1.5 flex items-center gap-1.5">
+                      <Building className="w-3.5 h-3.5 text-blue-600" />
+                      ข้อมูลลูกค้าที่ตรวจพบ (Customer Fields)
+                    </h5>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <span className="text-slate-500 block text-[10.5px]">ชื่อลูกค้า:</span>
+                        <span className="font-bold text-slate-900">{extractedData.customerName || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[10.5px]">เลขประจำตัวผู้เสียภาษี:</span>
+                        <span className="font-mono font-bold text-blue-900">{extractedData.customerTaxId || '-'}</span>
+                        {extractedData.customerBranch && (
+                          <span className="text-slate-500 ml-2">({extractedData.customerBranch})</span>
+                        )}
+                      </div>
+                      <div className="sm:col-span-2">
+                        <span className="text-slate-500 block text-[10.5px]">ที่อยู่ลูกค้า:</span>
+                        <span className="text-slate-800">{extractedData.customerAddress || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[10.5px]">เบอร์โทรศัพท์:</span>
+                        <span className="font-mono text-slate-800">{extractedData.customerPhone || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[10.5px]">รหัสลูกค้า:</span>
+                        <span className="font-mono font-semibold text-slate-700">{extractedData.customerCode || '-'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Document Meta Preview */}
+                  <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-3">
+                    <h5 className="font-bold text-slate-900 text-xs border-b border-slate-200 pb-1.5 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                      ข้อมูลวันที่และเงื่อนไข (Document Meta)
+                    </h5>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                      <div>
+                        <span className="text-slate-500 block text-[10.5px]">วันที่เอกสาร:</span>
+                        <span className="font-medium text-slate-900">{extractedData.documentDate || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[10.5px]">พนักงานขาย / ผู้ประสานงาน:</span>
+                        <span className="font-medium text-slate-900">{extractedData.salesman || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[10.5px]">กำหนดชำระเงิน:</span>
+                        <span className="font-medium text-slate-900">{extractedData.paymentDueDate || '-'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Items Preview Table */}
+                  {extractedData.items && extractedData.items.length > 0 && (
+                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-3">
+                      <h5 className="font-bold text-slate-900 text-xs border-b border-slate-200 pb-1.5 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <FileSpreadsheet className="w-3.5 h-3.5 text-blue-600" />
+                          รายการสินค้า / บริการที่ตรวจพบ ({extractedData.items.length} รายการ)
+                        </span>
+                      </h5>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="bg-slate-50 text-slate-600 border-b border-slate-200 text-[11px]">
+                              <th className="py-2 px-2.5 font-bold">#</th>
+                              <th className="py-2 px-2.5 font-bold">รายการ (Description)</th>
+                              <th className="py-2 px-2.5 font-bold text-center">จำนวน</th>
+                              <th className="py-2 px-2.5 font-bold text-center">หน่วย</th>
+                              <th className="py-2 px-2.5 font-bold text-right">ราคา/หน่วย</th>
+                              <th className="py-2 px-2.5 font-bold text-right">จำนวนเงิน</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 font-mono">
+                            {extractedData.items.map((it, idx) => (
+                              <tr key={idx} className="hover:bg-slate-50/50">
+                                <td className="py-2 px-2.5 text-slate-400">{idx + 1}</td>
+                                <td className="py-2 px-2.5 font-sans font-medium text-slate-900">{it.description}</td>
+                                <td className="py-2 px-2.5 text-center text-slate-700">{it.quantity}</td>
+                                <td className="py-2 px-2.5 text-center text-slate-600 font-sans">{it.unit || 'รายการ'}</td>
+                                <td className="py-2 px-2.5 text-right text-slate-800">฿{formatCurrency(it.unitPrice)}</td>
+                                <td className="py-2 px-2.5 text-right font-bold text-blue-900">
+                                  ฿{formatCurrency(it.amount ?? (it.quantity * it.unitPrice))}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Modal Footer Actions */}
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setExtractedData(null)}
+                      className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                    >
+                      ย้อนกลับ
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleApplyAiData(extractedData)}
+                      className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-600/30 cursor-pointer transition-all"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-white" />
+                      นำข้อมูลเข้าสู่แบบฟอร์ม (Auto-Map to Form)
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 };

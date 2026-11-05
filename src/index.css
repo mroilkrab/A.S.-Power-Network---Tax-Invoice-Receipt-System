@@ -11,9 +11,8 @@
 }
 
 .font-document {
-  font-family: 'Angsana New', 'AngsanaUPC', 'Browallia New', 'BrowalliaUPC', 'Bai Jamjuree', 'Sarabun', Tahoma, sans-serif;
-  font-size: 13.5pt;
   line-height: 1.3;
+  font-variant-numeric: tabular-nums;
   word-break: normal;
   overflow-wrap: break-word;
   text-wrap: pretty;
@@ -106,6 +105,16 @@
     overflow-wrap: break-word;
     text-wrap: pretty;
     line-break: strict;
+  }
+
+  /* Ensure consistent typography for Thai and English throughout print output */
+  .invoice-paper,
+  .invoice-paper * {
+    font-family: inherit !important;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 
   /* Prevent browser default headers/footers */
