@@ -23,6 +23,7 @@ import {
   FileCheck
 } from 'lucide-react';
 import { AiDocumentService, ExtractedInvoiceData } from '../services/aiDocumentService.ts';
+import { backupInvoiceToGoogleDrive } from '../services/googleDriveService.ts';
 
 interface Props {
   initialData?: InvoiceDocument | null;
@@ -50,7 +51,7 @@ export const InvoiceForm: React.FC<Props> = ({
   const [referenceNo, setReferenceNo] = useState(initialData?.referenceNo || '');
   const [documentDate, setDocumentDate] = useState(initialData?.documentDate || todayIso);
   const [documentDateThai, setDocumentDateThai] = useState(
-    initialData?.documentDateThai || toThaiDateString(todayIso)
+    initialData?.documentDateThai || toThaiDateString(todayIso, settings.dateFormatPreference || 'buddhist')
   );
 
   const [customerCode, setCustomerCode] = useState(initialData?.customerCode || 'UNI - 001');
@@ -95,10 +96,10 @@ export const InvoiceForm: React.FC<Props> = ({
     ]
   );
 
-  // Update Thai date when ISO date changes
+  // Update Thai date when ISO date changes according to user's era preference
   useEffect(() => {
-    setDocumentDateThai(toThaiDateString(documentDate));
-  }, [documentDate]);
+    setDocumentDateThai(toThaiDateString(documentDate, settings.dateFormatPreference || 'buddhist'));
+  }, [documentDate, settings.dateFormatPreference]);
 
   // Recalculate totals
   const subtotal = items.reduce((sum, item) => sum + (item.amount || 0), 0);
@@ -249,7 +250,7 @@ export const InvoiceForm: React.FC<Props> = ({
     if (data.customerCode) setCustomerCode(data.customerCode);
     if (data.documentDate) {
       setDocumentDate(data.documentDate);
-      setDocumentDateThai(toThaiDateString(data.documentDate));
+      setDocumentDateThai(toThaiDateString(data.documentDate, settings.dateFormatPreference || 'buddhist'));
     }
     if (data.referenceNo) setReferenceNo(data.referenceNo);
     if (data.salesman) setSalesman(data.salesman);
@@ -326,6 +327,13 @@ export const InvoiceForm: React.FC<Props> = ({
     };
 
     onSave(invoice);
+
+    // Auto-backup to Google Drive if enabled
+    if (settings.autoBackupToGoogleDrive) {
+      backupInvoiceToGoogleDrive(invoice, settings).catch(err => {
+        console.warn('Auto backup to Google Drive:', err);
+      });
+    }
   };
 
   return (

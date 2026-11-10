@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import { InvoiceDocument, CompanySettings } from '../types/index.ts';
 import { InvoiceDocumentPaper } from './InvoiceDocumentPaper.tsx';
 import {
+  backupInvoiceToGoogleDrive,
+  googleSignIn,
+  getAccessToken
+} from '../services/googleDriveService.ts';
+import {
   Printer,
   ArrowLeft,
   Eye,
@@ -11,7 +16,11 @@ import {
   FileCheck,
   SlidersHorizontal,
   Type,
-  Info
+  Info,
+  FolderOpen,
+  CloudUpload,
+  CheckCircle,
+  ExternalLink
 } from 'lucide-react';
 
 interface Props {
@@ -25,6 +34,9 @@ export const InvoicePrintView: React.FC<Props> = ({ invoice, settings, onBack, o
   const [docType, setDocType] = useState<'original' | 'copy'>('original');
   const [showStamp, setShowStamp] = useState(true);
   const [showSignature, setShowSignature] = useState(true);
+  const [driveStatus, setDriveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [driveFolderUrl, setDriveFolderUrl] = useState<string | undefined>(invoice.googleDriveFolderUrl);
+  const [driveMsg, setDriveMsg] = useState<string>('');
   
   // Non-VAT Registered Customer Toggle
   const [isNonVatCustomer, setIsNonVatCustomer] = useState(false);
@@ -40,6 +52,29 @@ export const InvoicePrintView: React.FC<Props> = ({ invoice, settings, onBack, o
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleBackupToDrive = async () => {
+    setDriveStatus('saving');
+    try {
+      let token = await getAccessToken();
+      if (!token) {
+        const signinRes = await googleSignIn();
+        if (!signinRes) {
+          setDriveStatus('idle');
+          return;
+        }
+      }
+      const res = await backupInvoiceToGoogleDrive(invoice, settings);
+      setDriveStatus('success');
+      setDriveFolderUrl(res.folderUrl);
+      setDriveMsg(`สำรองไฟล์เอกสาร ${invoice.documentNo} ลงโฟลเดอร์ Google Drive เรียบร้อย`);
+      setTimeout(() => setDriveMsg(''), 4500);
+    } catch (err: any) {
+      setDriveStatus('error');
+      setDriveMsg('สำรองข้อมูลไม่สำเร็จ: ' + err.message);
+      setTimeout(() => setDriveMsg(''), 5000);
+    }
   };
 
   return (
@@ -196,6 +231,30 @@ export const InvoicePrintView: React.FC<Props> = ({ invoice, settings, onBack, o
             </button>
           )}
 
+          {/* Google Drive Action Buttons */}
+          {driveFolderUrl && (
+            <a
+              href={driveFolderUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg transition-colors cursor-pointer text-xs"
+              title="เปิดโฟลเดอร์สำหรับเอกสารนี้ใน Google Drive"
+            >
+              <FolderOpen className="w-3.5 h-3.5 text-emerald-600" />
+              โฟลเดอร์ Drive ({invoice.documentNo})
+            </a>
+          )}
+
+          <button
+            onClick={handleBackupToDrive}
+            disabled={driveStatus === 'saving'}
+            className="flex items-center gap-1.5 px-3 py-1.5 font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-colors cursor-pointer text-xs"
+            title="สำรองไฟล์เอกสาร JSON และ HTML A4 ลง Google Drive แยกโฟลเดอร์ตามเลขที่เอกสาร"
+          >
+            <CloudUpload className={`w-3.5 h-3.5 text-blue-600 ${driveStatus === 'saving' ? 'animate-bounce' : ''}`} />
+            {driveStatus === 'saving' ? 'กำลังบันทึกลง Drive...' : driveFolderUrl ? 'อัปเดตไฟล์บน Drive' : 'สำรองเข้า Drive'}
+          </button>
+
           <button
             onClick={handlePrint}
             className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 rounded-lg shadow-sm transition-all cursor-pointer"
@@ -205,6 +264,14 @@ export const InvoicePrintView: React.FC<Props> = ({ invoice, settings, onBack, o
           </button>
         </div>
       </div>
+
+      {/* Floating Drive Toast Notice */}
+      {driveMsg && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 text-xs font-semibold animate-in fade-in slide-in-from-bottom border border-slate-700">
+          <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{driveMsg}</span>
+        </div>
+      )}
 
       {/* Main Standard Document View (Centered Full Paper) */}
       <div className="flex justify-center pb-12 print:p-0 print:m-0 print:block">

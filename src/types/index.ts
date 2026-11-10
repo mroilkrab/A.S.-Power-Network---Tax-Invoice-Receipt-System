@@ -57,6 +57,9 @@ export interface InvoiceDocument {
   createdAt: string;
   updatedAt: string;
   syncedToCloud: boolean;
+  googleDriveFolderId?: string;
+  googleDriveFolderUrl?: string;
+  googleDriveBackupAt?: string;
 }
 
 export interface CompanySettings {
@@ -116,9 +119,18 @@ export interface CompanySettings {
   companyHeaderFontSize?: number; // e.g. 18, 20, 22
   documentBaseFontSize?: number; // e.g. 13.5, 14.5, 16
 
+  // Date Format Preference: Buddhist Era (พ.ศ.) vs Christian Era (ค.ศ.)
+  dateFormatPreference?: 'buddhist' | 'christian';
+
   // Stamp & Signature Alignment
   stampPosition?: 'center' | 'left' | 'right' | 'watermark';
   stampOpacity?: number;
+  signatureBoxCount?: '3boxes' | '4boxes';
+
+  // Google Drive Backup
+  autoBackupToGoogleDrive?: boolean;
+  googleDriveBackupFolderId?: string;
+  lastGoogleDriveBackupDate?: string | null;
 
   // Cloudflare D1 Integration
   cloudflareD1Enabled?: boolean;
@@ -134,7 +146,7 @@ export interface BackupLog {
   timestamp: string;
   recordsCount: number;
   status: 'success' | 'failed';
-  type: 'manual' | 'daily_auto' | 'hybrid_cloud' | 'cloudflare_d1' | 'word_import';
+  type: 'manual' | 'daily_auto' | 'hybrid_cloud' | 'cloudflare_d1' | 'word_import' | 'google_drive';
   message: string;
 }
 

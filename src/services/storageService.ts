@@ -285,7 +285,7 @@ export class StorageService {
   }
 
   /**
-   * Export 12-Month Financial Summary CSV (รายงานสรุปยอดขายและภาษี 12 เดือน)
+   * Export 12-Month Financial Summary CSV (รายงานสรุปยอดขายรายเดือน สำหรับนำไปใช้ต่อใน Excel)
    */
   static export12MonthSummaryCsv(
     yearThai: number,
@@ -295,50 +295,73 @@ export class StorageService {
       fullName: string;
       sales: number;
       vat: number;
+      withholdingTax?: number;
       grandTotal: number;
       count: number;
     }>,
     totalSales: number,
     totalVat: number,
     grandTotal: number,
-    yearInvoiceCount: number
+    yearInvoiceCount: number,
+    totalWithholdingTax: number = 0
   ): void {
     const settings = this.getSettings();
+    const isChristianEra = settings.dateFormatPreference === 'christian';
+    const yearCe = yearThai - 543;
+    const yearLabel = isChristianEra ? `ค.ศ. ${yearCe} (พ.ศ. ${yearThai})` : `พ.ศ. ${yearThai} (ค.ศ. ${yearCe})`;
+    const exportDateStr = new Date().toLocaleDateString('th-TH', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
     const metaHeaders = [
-      `"รายงานสรุปผลประกอบการและภาษีมูลค่าเพิ่ม 12 เดือน (12-Month Financial & Tax Summary Report)"`,
+      `"รายงานสรุปผลประกอบการและยอดขายรายเดือน (Monthly Sales & Tax Summary Report)"`,
       `"กิจการ: ${settings.name}"`,
       `"เลขประจำตัวผู้เสียภาษี: ${settings.taxId} | สาขา: ${settings.branch}"`,
-      `"ปีภาษี: พ.ศ. ${yearThai} (ค.ศ. ${yearThai - 543})"`,
-      `"วันที่ออกรายงาน: ${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}"`
+      `"ปีภาษี: ${yearLabel}"`,
+      `"วันที่ออกรายงาน: ${exportDateStr} น."`
     ];
 
     const tableHeaders = [
       'ลำดับเดือน',
       'เดือน (Month)',
-      'ยอดขายก่อนภาษี (Sales Before VAT)',
-      'ภาษีมูลค่าเพิ่ม 7% (Output VAT 7%)',
-      'ยอดรวมสุทธิ (Grand Total)',
       'จำนวนเอกสาร (ฉบับ)',
+      'ยอดขายก่อนภาษี (บาท)',
+      'ภาษีมูลค่าเพิ่ม 7% (บาท)',
+      'ภาษีหัก ณ ที่จ่าย (บาท)',
+      'ยอดรวมสุทธิ (บาท)',
+      'สัดส่วนยอดขาย (%)',
       'สถานะการบันทึก'
     ];
 
-    const rows = monthlyData.map((m, idx) => [
-      idx + 1,
-      `"${m.fullName}"`,
-      m.sales.toFixed(2),
-      m.vat.toFixed(2),
-      m.grandTotal.toFixed(2),
-      m.count,
-      m.count > 0 ? '"บันทึกรายการแล้ว"' : '"ไม่มีรายการ"'
-    ]);
+    const rows = monthlyData.map((m, idx) => {
+      const percentage = totalSales > 0 ? ((m.sales / totalSales) * 100).toFixed(1) + '%' : '0.0%';
+      const wht = (m.withholdingTax || 0).toFixed(2);
+      return [
+        idx + 1,
+        `"${m.fullName}"`,
+        m.count,
+        m.sales.toFixed(2),
+        m.vat.toFixed(2),
+        wht,
+        m.grandTotal.toFixed(2),
+        `"${percentage}"`,
+        m.count > 0 ? '"บันทึกรายการแล้ว"' : '"ไม่มีรายการ"'
+      ];
+    });
 
     const totalRow = [
       '"รวม"',
-      `"รวมตลอดทั้งปี (12 เดือน พ.ศ. ${yearThai})"`,
+      `"รวมตลอดทั้งปี (${yearLabel})"`,
+      yearInvoiceCount,
       totalSales.toFixed(2),
       totalVat.toFixed(2),
+      totalWithholdingTax.toFixed(2),
       grandTotal.toFixed(2),
-      yearInvoiceCount,
+      '"100.0%"',
       '"สมบูรณ์"'
     ];
 
@@ -356,7 +379,7 @@ export class StorageService {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Financial_Summary_12Months_${yearThai}_AS_Power.csv`;
+    a.download = `Monthly_Sales_Summary_${isChristianEra ? yearCe : yearThai}_AS_Power.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }

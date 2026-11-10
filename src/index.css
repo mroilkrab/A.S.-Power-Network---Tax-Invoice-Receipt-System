@@ -55,6 +55,12 @@
   line-break: strict;
 }
 
+/* Ensure unified typography across all invoice paper elements (Thai, English, Digits) */
+.invoice-paper,
+.invoice-paper * {
+  font-family: var(--document-font-family, inherit);
+}
+
 @media print {
   @page {
     size: A4 portrait;
@@ -132,7 +138,7 @@
   /* Ensure consistent typography, background colors, and borders throughout print output */
   .invoice-paper,
   .invoice-paper * {
-    font-family: inherit !important;
+    font-family: var(--document-font-family, inherit) !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;

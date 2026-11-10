@@ -1,7 +1,13 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { CompanySettings, BackupLog } from '../types/index.ts';
 import { StorageService } from '../services/storageService.ts';
 import { CloudflareD1Service } from '../services/cloudflareD1Service.ts';
+import {
+  initAuth,
+  googleSignIn,
+  logout,
+  backupAllInvoicesToGoogleDrive
+} from '../services/googleDriveService.ts';
 import { DEFAULT_STAMP_SVG, DEFAULT_SIGNATURE_SVG } from '../utils/defaultData.ts';
 import { getThaiFontFamily } from './InvoiceDocumentPaper.tsx';
 import {
@@ -26,7 +32,11 @@ import {
   Sparkles,
   Type,
   Database,
-  FileCode
+  FileCode,
+  Calendar,
+  FolderOpen,
+  ExternalLink,
+  HardDrive
 } from 'lucide-react';
 
 interface Props {
@@ -66,6 +76,99 @@ export const SettingsView: React.FC<Props> = ({
   const fileInputStampRef = useRef<HTMLInputElement | null>(null);
   const fileInputSignatureRef = useRef<HTMLInputElement | null>(null);
   const fileInputRestoreRef = useRef<HTMLInputElement | null>(null);
+
+  // Google Drive Integration State
+  const [googleUser, setGoogleUser] = useState<any>(null);
+  const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false);
+  const [googleBackupProgress, setGoogleBackupProgress] = useState<{
+    status: 'idle' | 'running' | 'success' | 'error';
+    current: number;
+    total: number;
+    message: string;
+  }>({
+    status: 'idle',
+    current: 0,
+    total: 0,
+    message: ''
+  });
+
+  useEffect(() => {
+    const unsubscribe = initAuth(
+      user => {
+        setGoogleUser(user);
+      },
+      () => {
+        setGoogleUser(null);
+      }
+    );
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, []);
+
+  const handleGoogleSignIn = async () => {
+    setIsGoogleSigningIn(true);
+    try {
+      const res = await googleSignIn();
+      if (res) {
+        setGoogleUser(res.user);
+      }
+    } catch (err: any) {
+      alert('เข้าสู่ระบบ Google Drive ไม่สำเร็จ: ' + err.message);
+    } finally {
+      setIsGoogleSigningIn(false);
+    }
+  };
+
+  const handleGoogleSignOut = async () => {
+    await logout();
+    setGoogleUser(null);
+  };
+
+  const handleGoogleBackupAll = async () => {
+    const invoices = StorageService.getInvoices();
+    if (invoices.length === 0) {
+      alert('ไม่พบเอกสารในระบบที่จะสำรองข้อมูล');
+      return;
+    }
+
+    setGoogleBackupProgress({
+      status: 'running',
+      current: 0,
+      total: invoices.length,
+      message: `กำลังเริ่มต้นสำรองเอกสาร ${invoices.length} ฉบับลง Google Drive...`
+    });
+
+    try {
+      const res = await backupAllInvoicesToGoogleDrive(
+        invoices,
+        formData,
+        (curr, tot, docNo) => {
+          setGoogleBackupProgress({
+            status: 'running',
+            current: curr,
+            total: tot,
+            message: `กำลังสำรองเอกสาร ${curr}/${tot} (เลขที่ ${docNo}) ลงในโฟลเดอร์ Google Drive...`
+          });
+        }
+      );
+
+      setGoogleBackupProgress({
+        status: 'success',
+        current: invoices.length,
+        total: invoices.length,
+        message: res.message
+      });
+      onTriggerBackup();
+    } catch (err: any) {
+      setGoogleBackupProgress({
+        status: 'error',
+        current: 0,
+        total: invoices.length,
+        message: 'พบปัญหาในการสำรองข้อมูลลง Google Drive: ' + err.message
+      });
+    }
+  };
 
   const handleInputChange = (field: keyof CompanySettings, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -522,6 +625,68 @@ export const SettingsView: React.FC<Props> = ({
             </label>
           </div>
         </div>
+
+        {/* Signature Box Layout Selector (3 Boxes vs 4 Boxes) */}
+        <div className="pt-3 border-t border-slate-200">
+          <label className="block text-xs font-bold text-slate-800 mb-1.5">
+            รูปแบบการจัดวางช่องลายเซ็นต์ท้ายเอกสาร (Signature Layout):
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div
+              onClick={() => handleInputChange('signatureBoxCount', '3boxes')}
+              className={`p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                (formData.signatureBoxCount || '3boxes') === '3boxes'
+                  ? 'border-blue-600 bg-blue-50/70 ring-1 ring-blue-500/20'
+                  : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="signatureBoxLayout"
+                  checked={(formData.signatureBoxCount || '3boxes') === '3boxes'}
+                  onChange={() => handleInputChange('signatureBoxCount', '3boxes')}
+                  className="w-4 h-4 text-blue-600 focus:ring-0 cursor-pointer"
+                />
+                <div>
+                  <span className="font-bold text-xs text-slate-900 block">
+                    3 ช่องมาตรฐานทางการ (แนะนำสำหรับ A4)
+                  </span>
+                  <span className="text-[11px] text-slate-500 block mt-0.5">
+                    ผู้รับสินค้า, ผู้รับเงิน/ส่งมอบ, ในนามห้างฯ — กว้างโปร่ง 60mm ชื่อไม่ชนกัน 100%
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div
+              onClick={() => handleInputChange('signatureBoxCount', '4boxes')}
+              className={`p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                formData.signatureBoxCount === '4boxes'
+                  ? 'border-blue-600 bg-blue-50/70 ring-1 ring-blue-500/20'
+                  : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="signatureBoxLayout"
+                  checked={formData.signatureBoxCount === '4boxes'}
+                  onChange={() => handleInputChange('signatureBoxCount', '4boxes')}
+                  className="w-4 h-4 text-blue-600 focus:ring-0 cursor-pointer"
+                />
+                <div>
+                  <span className="font-bold text-xs text-slate-900 block">
+                    4 ช่องแยกอิสระ (ผู้รับ, ผู้ส่ง, การเงิน, หุ้นส่วน)
+                  </span>
+                  <span className="text-[11px] text-slate-500 block mt-0.5">
+                    แบ่ง 4 การ์ดอิสระ ตัดคำอัตโนมัติ ไม่ล้นทับซ้อนกัน
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Section 2: ข้อมูลองค์กร นิติบุคคล และข้อมูลเพิ่มเติม (Additional Business Information) */}
@@ -816,6 +981,114 @@ export const SettingsView: React.FC<Props> = ({
             <p className="text-[11px] text-slate-500">
               * ตราประทับจะแสดงประทับคู่กับลายเซ็นต์ผู้มีอำนาจลงนามทางด้านล่างขวาของเอกสาร
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Section: การตั้งค่ารูปแบบวันที่และการแสดงผล (Date Era & Format Preference) */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div className="border-b border-slate-200 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-blue-600" />
+              การตั้งค่ารูปแบบวันที่และการแสดงผล (Date Era & Format Preference)
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              เลือกรูปแบบปีศักราช (พ.ศ. หรือ ค.ศ.) สำหรับแสดงผลบนเอกสารพิมพ์ หน้าแดชบอร์ด รายการเอกสาร และรายงานทั้งหมด
+            </p>
+          </div>
+          <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[11px] font-bold shrink-0">
+            มีผลครอบคลุมทั้งระบบ
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Option 1: พุทธศักราช (พ.ศ.) */}
+          <div
+            onClick={() => handleInputChange('dateFormatPreference', 'buddhist')}
+            className={`p-4 rounded-xl border-2 transition-all cursor-pointer relative ${
+              (formData.dateFormatPreference || 'buddhist') === 'buddhist'
+                ? 'border-blue-600 bg-blue-50/60 shadow-sm ring-2 ring-blue-500/20'
+                : 'border-slate-200 hover:border-slate-300 bg-white'
+            }`}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2.5">
+                <input
+                  type="radio"
+                  name="dateFormatPreference"
+                  checked={(formData.dateFormatPreference || 'buddhist') === 'buddhist'}
+                  onChange={() => handleInputChange('dateFormatPreference', 'buddhist')}
+                  className="w-4 h-4 text-blue-600 focus:ring-0 cursor-pointer"
+                />
+                <div>
+                  <h4 className="font-bold text-slate-900 text-sm">พุทธศักราช (พ.ศ.)</h4>
+                  <p className="text-xs text-slate-500">มาตรฐานตามธรรมเนียมการค้าและระบบภาษีของประเทศไทย</p>
+                </div>
+              </div>
+              <span className="text-[10px] bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded">
+                ค่าเริ่มต้น
+              </span>
+            </div>
+
+            <div className="mt-3 p-3 bg-white border border-slate-200 rounded-lg text-xs space-y-1.5">
+              <div className="flex justify-between items-center text-slate-600">
+                <span>ตัวอย่างวันที่บนเอกสาร A4:</span>
+                <span className="font-bold text-slate-900 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                  4 พฤศจิกายน พ.ศ. 2569
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-slate-600">
+                <span>ตัวอย่างบนแดชบอร์ด / ปีภาษี:</span>
+                <span className="font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                  ปี พ.ศ. 2569 (เทียบ พ.ศ. 2568)
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Option 2: คริสต์ศักราช (ค.ศ.) */}
+          <div
+            onClick={() => handleInputChange('dateFormatPreference', 'christian')}
+            className={`p-4 rounded-xl border-2 transition-all cursor-pointer relative ${
+              formData.dateFormatPreference === 'christian'
+                ? 'border-blue-600 bg-blue-50/60 shadow-sm ring-2 ring-blue-500/20'
+                : 'border-slate-200 hover:border-slate-300 bg-white'
+            }`}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2.5">
+                <input
+                  type="radio"
+                  name="dateFormatPreference"
+                  checked={formData.dateFormatPreference === 'christian'}
+                  onChange={() => handleInputChange('dateFormatPreference', 'christian')}
+                  className="w-4 h-4 text-blue-600 focus:ring-0 cursor-pointer"
+                />
+                <div>
+                  <h4 className="font-bold text-slate-900 text-sm">คริสต์ศักราช (ค.ศ.)</h4>
+                  <p className="text-xs text-slate-500">มาตรฐานสากล (Common Era / C.E. / A.D.)</p>
+                </div>
+              </div>
+              <span className="text-[10px] bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded">
+                สากล
+              </span>
+            </div>
+
+            <div className="mt-3 p-3 bg-white border border-slate-200 rounded-lg text-xs space-y-1.5">
+              <div className="flex justify-between items-center text-slate-600">
+                <span>ตัวอย่างวันที่บนเอกสาร A4:</span>
+                <span className="font-bold text-slate-900 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                  4 พฤศจิกายน ค.ศ. 2026
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-slate-600">
+                <span>ตัวอย่างบนแดชบอร์ด / ปีภาษี:</span>
+                <span className="font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                  ปี ค.ศ. 2026 (เทียบ ค.ศ. 2025)
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1444,6 +1717,135 @@ export const SettingsView: React.FC<Props> = ({
                 placeholder="https://d1-sync.yourworker.workers.dev"
               />
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Section 5.5: ระบบจัดเก็บและสำรองไฟล์เอกสารเข้า Google Drive (Google Drive Cloud Archive) */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+        <div className="border-b border-slate-200 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0">
+              {/* Google Drive Color Icon */}
+              <svg className="w-6 h-6" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47"/>
+                <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.25z" fill="#00832d"/>
+                <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.25z" fill="#2684fc"/>
+                <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900 text-base">
+                ระบบจัดเก็บและสำรองเอกสารเข้า Google Drive (Google Drive Archive)
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                จัดเก็บไฟล์เอกสารสำรอง (JSON และ Printable HTML) แยกโฟลเดอร์ตามเลขที่เอกสาร (เช่น 690011/)
+              </p>
+            </div>
+          </div>
+
+          {/* Connection Status Badge */}
+          {googleUser ? (
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-semibold">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                เชื่อมต่อกับ {googleUser.email}
+              </span>
+              <button
+                type="button"
+                onClick={handleGoogleSignOut}
+                className="text-xs text-slate-500 hover:text-rose-600 underline cursor-pointer"
+              >
+                ออกจากระบบ
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={isGoogleSigningIn}
+              className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+              </svg>
+              {isGoogleSigningIn ? 'กำลังเข้าสู่ระบบ...' : 'Sign in with Google'}
+            </button>
+          )}
+        </div>
+
+        {/* Action & Toggle Box */}
+        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h4 className="text-xs font-bold text-slate-800">สำรองข้อมูลเอกสารขึ้น Google Drive (ทุกฉบับ)</h4>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                ระบบจะสร้างโฟลเดอร์ AS_Power_Invoice_Backups และโฟลเดอร์ย่อยตามเลขที่เอกสาร (เช่น 690011/) พร้อมอัปโหลดไฟล์ JSON และ Printable HTML ให้อัตโนมัติ
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleGoogleBackupAll}
+                disabled={googleBackupProgress.status === 'running' || !googleUser}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+              >
+                <CloudUpload className={`w-4 h-4 ${googleBackupProgress.status === 'running' ? 'animate-bounce' : ''}`} />
+                {googleBackupProgress.status === 'running' ? 'กำลังสำรองข้อมูล...' : 'สำรองทุกเอกสารเข้า Drive ทันที'}
+              </button>
+
+              <a
+                href="https://drive.google.com/drive/my-drive"
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-2 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+                title="เปิดดูโฟลเดอร์บน Google Drive"
+              >
+                <FolderOpen className="w-4 h-4 text-amber-500" />
+                เปิด Google Drive
+              </a>
+            </div>
+          </div>
+
+          {/* Progress message */}
+          {googleBackupProgress.status !== 'idle' && (
+            <div
+              className={`p-3 rounded-lg text-xs font-semibold flex items-center gap-2 ${
+                googleBackupProgress.status === 'running'
+                  ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                  : googleBackupProgress.status === 'success'
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                  : 'bg-rose-100 text-rose-800 border border-rose-200'
+              }`}
+            >
+              {googleBackupProgress.status === 'running' && <RefreshCw className="w-4 h-4 animate-spin" />}
+              {googleBackupProgress.status === 'success' && <CheckCircle className="w-4 h-4 text-emerald-600" />}
+              <span>{googleBackupProgress.message}</span>
+            </div>
+          )}
+
+          {/* Settings checkbox */}
+          <div className="pt-2 border-t border-slate-200">
+            <label className="flex items-center gap-2.5 text-xs text-slate-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.autoBackupToGoogleDrive || false}
+                onChange={e => handleInputChange('autoBackupToGoogleDrive', e.target.checked)}
+                className="w-4 h-4 rounded text-blue-600 focus:ring-0 cursor-pointer"
+              />
+              <span className="font-semibold text-slate-800">
+                เปิดระบบสำรองข้อมูลเข้า Google Drive อัตโนมัติ (Auto-backup per document folder)
+              </span>
+            </label>
+            <p className="text-[11px] text-slate-500 ml-6 mt-0.5">
+              เมื่อมีการบันทึกเอกสารใหม่หรืออัปเดต ระบบจะอัปเดตไฟล์สำรองลงในโฟลเดอร์ตามเลขที่เอกสารบน Google Drive ให้โดยอัตโนมัติ
+            </p>
           </div>
         </div>
       </div>

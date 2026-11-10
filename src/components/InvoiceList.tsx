@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { InvoiceDocument, CompanySettings } from '../types/index.ts';
-import { formatCurrency } from '../utils/bahtText.ts';
+import { formatCurrency, getInvoiceDisplayDate, formatYearDisplay } from '../utils/bahtText.ts';
 import {
   Search,
   Filter,
@@ -48,6 +48,7 @@ export const InvoiceList: React.FC<Props> = ({
   onDuplicateInvoice,
   onRefreshInvoices
 }) => {
+  const era = settings?.dateFormatPreference || 'buddhist';
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
   const [selectedYear, setSelectedYear] = useState<string>('all');
@@ -303,8 +304,8 @@ export const InvoiceList: React.FC<Props> = ({
               className="w-full py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
               <option value="all">ทุกปีภาษี</option>
-              <option value="2569">พ.ศ. 2569</option>
-              <option value="2568">พ.ศ. 2568</option>
+              <option value="2569">{formatYearDisplay(2026, era)}</option>
+              <option value="2568">{formatYearDisplay(2025, era)}</option>
             </select>
           </div>
 
@@ -391,7 +392,7 @@ export const InvoiceList: React.FC<Props> = ({
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              ปีนี้ 2569
+              ปีนี้ ({era === 'christian' ? '2026' : '2569'})
             </button>
           </div>
 
@@ -530,7 +531,7 @@ export const InvoiceList: React.FC<Props> = ({
                       </button>
                     </td>
                     <td className="py-3 px-4 text-slate-600">
-                      {inv.documentDateThai}
+                      {getInvoiceDisplayDate(inv, era)}
                     </td>
                     <td className="py-3 px-4">
                       <div
@@ -570,9 +571,24 @@ export const InvoiceList: React.FC<Props> = ({
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className="text-emerald-600 inline-block" title="ซิงค์บนระบบคลาวด์แล้ว">
-                        <CheckCircle className="w-4 h-4 mx-auto" />
-                      </span>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <span className="text-emerald-600 inline-block" title="ซิงค์บนระบบคลาวด์แล้ว">
+                          <CheckCircle className="w-4 h-4" />
+                        </span>
+                        {inv.googleDriveFolderUrl && (
+                          <a
+                            href={inv.googleDriveFolderUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-blue-600 hover:text-blue-800 bg-blue-50 p-1 rounded hover:bg-blue-100"
+                            title={`เปิดโฟลเดอร์สำรอง Google Drive (${inv.documentNo})`}
+                          >
+                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/>
+                            </svg>
+                          </a>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-4 text-center">
                       <div className="flex items-center justify-center gap-1.5">

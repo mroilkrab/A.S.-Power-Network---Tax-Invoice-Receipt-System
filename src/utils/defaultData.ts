@@ -104,6 +104,15 @@ export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
   documentBaseFontSize: 12.5,
   stampPosition: 'center',
   stampOpacity: 0.82,
+  signatureBoxCount: '3boxes',
+
+  // Date Format Preference: Buddhist Era (พ.ศ.) default
+  dateFormatPreference: 'buddhist',
+
+  // Google Drive Backup Defaults
+  autoBackupToGoogleDrive: false,
+  googleDriveBackupFolderId: '',
+  lastGoogleDriveBackupDate: null,
 
   // Cloudflare D1 integration
   cloudflareD1Enabled: true,

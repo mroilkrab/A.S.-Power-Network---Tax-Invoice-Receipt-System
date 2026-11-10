@@ -80,16 +80,93 @@ export const THAI_MONTHS_SHORT = [
   'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
 ];
 
-export function toThaiDateString(isoDateStr: string): string {
+export type DateEra = 'buddhist' | 'christian';
+
+/**
+ * Format ISO date string (YYYY-MM-DD) into Thai formatted string with specified Era (พ.ศ. หรือ ค.ศ.)
+ */
+export function toThaiDateString(isoDateStr: string, era: DateEra = 'buddhist'): string {
   if (!isoDateStr) return '';
   const date = new Date(isoDateStr);
   if (isNaN(date.getTime())) return isoDateStr;
 
   const day = date.getDate();
   const month = THAI_MONTHS[date.getMonth()];
-  const thaiYear = date.getFullYear() + 543;
+  const yearCe = date.getFullYear();
 
+  if (era === 'christian') {
+    return `${day} ${month} ค.ศ. ${yearCe}`;
+  }
+  const thaiYear = yearCe + 543;
   return `${day} ${month} พ.ศ. ${thaiYear}`;
+}
+
+/**
+ * Flexible date formatter supporting full, short, or slash representation
+ */
+export function formatDateByEra(
+  isoDateStr: string,
+  era: DateEra = 'buddhist',
+  format: 'full' | 'short' | 'slash' = 'full'
+): string {
+  if (!isoDateStr) return '';
+  const date = new Date(isoDateStr);
+  if (isNaN(date.getTime())) return isoDateStr;
+
+  const day = date.getDate();
+  const monthIndex = date.getMonth();
+  const yearCe = date.getFullYear();
+  const displayYear = era === 'christian' ? yearCe : yearCe + 543;
+  const eraLabel = era === 'christian' ? 'ค.ศ.' : 'พ.ศ.';
+
+  if (format === 'slash') {
+    const dd = String(day).padStart(2, '0');
+    const mm = String(monthIndex + 1).padStart(2, '0');
+    return `${dd}/${mm}/${displayYear}`;
+  }
+
+  if (format === 'short') {
+    return `${day} ${THAI_MONTHS_SHORT[monthIndex]} ${eraLabel} ${displayYear}`;
+  }
+
+  return `${day} ${THAI_MONTHS[monthIndex]} ${eraLabel} ${displayYear}`;
+}
+
+/**
+ * Get formatted date for invoice based on era preference
+ */
+export function getInvoiceDisplayDate(
+  invoice: { documentDate?: string; documentDateThai?: string },
+  era: DateEra = 'buddhist'
+): string {
+  if (invoice.documentDate) {
+    return toThaiDateString(invoice.documentDate, era);
+  }
+  if (!invoice.documentDateThai) return '';
+  
+  if (era === 'christian' && invoice.documentDateThai.includes('พ.ศ.')) {
+    // Convert พ.ศ. YYYY to ค.ศ. (YYYY - 543)
+    return invoice.documentDateThai.replace(/พ\.ศ\.\s*(\d{4})/, (_, yr) => {
+      const ce = parseInt(yr, 10) - 543;
+      return `ค.ศ. ${ce}`;
+    });
+  } else if (era === 'buddhist' && invoice.documentDateThai.includes('ค.ศ.')) {
+    return invoice.documentDateThai.replace(/ค\.ศ\.\s*(\d{4})/, (_, yr) => {
+      const be = parseInt(yr, 10) + 543;
+      return `พ.ศ. ${be}`;
+    });
+  }
+  return invoice.documentDateThai;
+}
+
+/**
+ * Formats a calendar year number according to the selected Era
+ */
+export function formatYearDisplay(yearCe: number, era: DateEra = 'buddhist'): string {
+  if (era === 'christian') {
+    return `ค.ศ. ${yearCe}`;
+  }
+  return `พ.ศ. ${yearCe + 543}`;
 }
 
 export function formatCurrency(amount: number): string {
@@ -101,15 +178,17 @@ export function formatCurrency(amount: number): string {
 
 export const numberToBahtText = numberToThaiBaht;
 
-export function formatThaiDateWithTime(isoDateStr: string): string {
+export function formatThaiDateWithTime(isoDateStr: string, era: DateEra = 'buddhist'): string {
   if (!isoDateStr) return '';
   const date = new Date(isoDateStr);
   if (isNaN(date.getTime())) return isoDateStr;
-  return date.toLocaleDateString('th-TH', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+
+  const day = date.getDate();
+  const month = THAI_MONTHS_SHORT[date.getMonth()];
+  const yearCe = date.getFullYear();
+  const displayYear = era === 'christian' ? yearCe : yearCe + 543;
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  return `${day} ${month} ${displayYear} ${hours}:${minutes} น.`;
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { InvoiceDocument, CompanySettings } from '../types/index.ts';
 import { InvoiceDocumentPaper } from './InvoiceDocumentPaper.tsx';
+import { getInvoiceDisplayDate } from '../utils/bahtText.ts';
 import {
   X,
   Printer,
@@ -132,7 +133,7 @@ export const InvoiceQuickPreviewModal: React.FC<Props> = ({
               </span>
             </div>
             <p className="text-[10.5px] text-slate-400">
-              ตัวอย่างด่วนแบบเต็มหน้า A4 (Quick Preview) • {invoice.documentDateThai}
+              ตัวอย่างด่วนแบบเต็มหน้า A4 (Quick Preview) • {getInvoiceDisplayDate(invoice, settings.dateFormatPreference || 'buddhist')}
             </p>
           </div>
         </div>
