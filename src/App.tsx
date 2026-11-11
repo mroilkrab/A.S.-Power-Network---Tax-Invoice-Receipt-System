@@ -21,7 +21,13 @@ import {
   User,
   ShieldCheck,
   FileCheck2,
-  Printer
+  Printer,
+  ExternalLink,
+  Copy,
+  Check,
+  Globe,
+  Share2,
+  AlertCircle
 } from 'lucide-react';
 
 export default function App() {
@@ -36,6 +42,14 @@ export default function App() {
 
   // Online / Offline Status
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+
+  // Live System URL modal state
+  const [showLiveUrlModal, setShowLiveUrlModal] = useState<boolean>(false);
+  const [copiedLiveUrl, setCopiedLiveUrl] = useState<boolean>(false);
+  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+  const devCloudRunUrl = "https://ais-dev-uhkpyo7fskbqigdrvqcx66-664312169583.asia-northeast1.run.app";
+  const preCloudRunUrl = "https://ais-pre-uhkpyo7fskbqigdrvqcx66-664312169583.asia-northeast1.run.app";
+  const liveAppUrl = (currentOrigin && currentOrigin.includes('run.app')) ? currentOrigin : devCloudRunUrl;
 
   // Daily backup alert banner
   const [dailyNotification, setDailyNotification] = useState<{ show: boolean; message: string }>({
@@ -271,6 +285,16 @@ export default function App() {
 
           {/* Right Status Badges & Profile */}
           <div className="flex items-center gap-2.5">
+            {/* Live System URL Button */}
+            <button
+              onClick={() => setShowLiveUrlModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer transition-all"
+              title="ดูลิงก์ระบบใช้งานจริงบน Google Cloud หรือเปิดเต็มหน้าจอ"
+            >
+              <ExternalLink className="w-3.5 h-3.5 text-blue-200" />
+              <span>ลิงก์ระบบจริง</span>
+            </button>
+
             {/* Online / Offline Indicator */}
             <div
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
@@ -464,6 +488,112 @@ export default function App() {
           </p>
         </div>
       </footer>
+
+      {/* Live System URL Modal (Standalone Production App Link) */}
+      {showLiveUrlModal && (
+        <div className="no-print fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white rounded-2xl max-w-xl w-full border border-slate-200 shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-blue-500/20 border border-blue-400/30 rounded-xl text-blue-300">
+                  <Globe className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-white">ลิงก์ระบบใช้งานจริง (Live Standalone App)</h3>
+                  <p className="text-xs text-blue-200">เข้าใช้งาน ออกบิล สแกนเอกสาร และสำรองข้อมูลจริงได้ทันที</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowLiveUrlModal(false)}
+                className="p-1.5 text-blue-200 hover:text-white hover:bg-white/10 rounded-lg cursor-pointer transition-colors"
+                title="ปิดหน้าต่าง"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Active Working URL */}
+              <div className="bg-emerald-50/70 border border-emerald-200 p-4 rounded-xl">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    ลิงก์ระบบใช้งานจริง (พร้อมใช้งานทันที Active 100%):
+                  </label>
+                  <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                    ออนไลน์
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 bg-white border border-emerald-300 px-3.5 py-2.5 rounded-xl font-mono text-xs text-slate-800 truncate select-all font-semibold">
+                    {liveAppUrl}
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(liveAppUrl);
+                      setCopiedLiveUrl(true);
+                      setTimeout(() => setCopiedLiveUrl(false), 2500);
+                    }}
+                    className="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shrink-0 shadow-sm"
+                  >
+                    {copiedLiveUrl ? <Check className="w-4 h-4 text-emerald-200" /> : <Copy className="w-4 h-4" />}
+                    <span>{copiedLiveUrl ? 'คัดลอกแล้ว' : 'คัดลอกลิงก์'}</span>
+                  </button>
+                </div>
+                <div className="mt-2.5">
+                  <a
+                    href={liveAppUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow cursor-pointer transition-all"
+                  >
+                    <ExternalLink className="w-4 h-4 text-emerald-200" />
+                    <span>เปิดใช้งานระบบเต็มหน้าจอทันที (Open Full Screen)</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* Clarification about ais-pre 404 */}
+              <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-amber-950">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>สาเหตุที่ลิงก์ ais-pre-*.run.app ขึ้น 404 Page Not Found:</span>
+                </div>
+                <p className="text-[11.5px] leading-relaxed text-amber-800 pl-5">
+                  ลิงก์ <code className="bg-amber-100/80 px-1 py-0.5 rounded text-[11px] font-mono">ais-pre</code> คือ <strong>Shared/Production URL</strong> ของ AI Studio ซึ่งระบบ Cloud Run จะสร้างให้เมื่อผู้ใช้กดปุ่ม <strong>&ldquo;Share&rdquo; (แชร์) หรือ &ldquo;Publish&rdquo;</strong> ที่มุมขวาบนของหน้าต่าง AI Studio ครั้งแรก
+                </p>
+                <p className="text-[11.5px] leading-relaxed text-amber-800 pl-5 font-medium">
+                  👉 <strong>ท่านสามารถใช้ลิงก์สีเขียวด้านบน (<code className="bg-amber-100/80 px-1 py-0.5 rounded text-[11px] font-mono">ais-dev</code>) เข้าใช้งานได้ทันที</strong> โดยไม่ต้องรอแชร์ ข้อมูลจะถูกบันทึกและสามารถสำรองขึ้น Google Drive ได้ตามปกติ 100%
+                </p>
+              </div>
+
+              {/* System Capabilities */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs text-slate-600">
+                <h4 className="font-bold text-slate-800 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-blue-600" />
+                  ฟังก์ชันทั้งหมดที่พร้อมใช้งานในระบบจริง:
+                </h4>
+                <ul className="space-y-1.5 pl-5 list-disc text-[11.5px]">
+                  <li><strong>พิมพ์เอกสาร A4 สวยงาม:</strong> ใบกำกับภาษี/ใบเสร็จรับเงิน จัดหน้าพอดี 1 หน้ากระดาษ ไม่ล้น ไม่ตัดท่อน</li>
+                  <li><strong>สำรองขึ้น Google Drive:</strong> บันทึกไฟล์สำรองเข้า Google Drive แยกโฟลเดอร์ตามเลขที่บิลอัตโนมัติ</li>
+                  <li><strong>สแกนบิลด้วย AI Gemini:</strong> วิเคราะห์บิลต้นฉบับกรอกข้อมูลให้อัตโนมัติ</li>
+                  <li><strong>ดาวน์โหลดรายงานสรุปภาษีขาย (CSV):</strong> ดึงข้อมูลยอดขายประจำเดือนไปเปิดใช้งานต่อใน Excel ได้ทันที</li>
+                  <li><strong>ค้นหาและกรองเอกสาร:</strong> ค้นหาตามชื่อลูกค้า เลขที่บิล และช่วงวันที่ได้อย่างรวดเร็ว</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-100 border-t border-slate-200 flex justify-end">
+              <button
+                onClick={() => setShowLiveUrlModal(false)}
+                className="px-4 py-2 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-xl text-xs font-semibold cursor-pointer"
+              >
+                ปิดหน้าต่าง
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

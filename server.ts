@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { GoogleGenAI, Type } from '@google/genai';
@@ -132,10 +133,14 @@ app.post('/api/ai-analyze-document', async (req, res) => {
 });
 
 // Vite middleware in development or static in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.resolve(__dirname, 'dist')));
+const distDir = path.resolve(__dirname, 'dist');
+const distIndex = path.resolve(distDir, 'index.html');
+const hasBuiltDist = fs.existsSync(distIndex);
+
+if (process.env.NODE_ENV === 'production' && hasBuiltDist) {
+  app.use(express.static(distDir));
   app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+    res.sendFile(distIndex);
   });
 } else {
   const { createServer } = await import('vite');

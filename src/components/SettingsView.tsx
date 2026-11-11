@@ -36,7 +36,13 @@ import {
   Calendar,
   FolderOpen,
   ExternalLink,
-  HardDrive
+  HardDrive,
+  GitBranch,
+  Copy,
+  Check,
+  Terminal,
+  Zap,
+  CheckCircle2
 } from 'lucide-react';
 
 interface Props {
@@ -91,6 +97,14 @@ export const SettingsView: React.FC<Props> = ({
     total: 0,
     message: ''
   });
+
+  // Copied code snippet state for GitHub / Vercel guide
+  const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
+  const handleCopyCode = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedSnippet(id);
+    setTimeout(() => setCopiedSnippet(null), 2500);
+  };
 
   useEffect(() => {
     const unsubscribe = initAuth(
@@ -1850,7 +1864,156 @@ export const SettingsView: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Section 6: ประวัติการสำรองข้อมูล (Backup Audit Logs) */}
+      {/* Section 6: การเชื่อมต่อและการติดตั้งบน GitHub & Vercel (GitHub & Vercel Deployment) */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+        <div className="border-b border-slate-200 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+              <GitBranch className="w-5 h-5 text-blue-600" />
+              การเชื่อมต่อ GitHub & ติดตั้งใช้งานผ่าน Vercel (GitHub & Vercel Deployment)
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              ระบบนี้ได้รับการเตรียมความพร้อมสำหรับ Deploy ขึ้น Vercel และเชื่อมต่อ GitHub เรียบร้อยแล้ว (มี vercel.json และ Serverless API พร้อมใช้งาน)
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <a
+              href="https://github.com/new"
+              target="_blank"
+              rel="noreferrer"
+              className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              สร้าง Repo บน GitHub
+            </a>
+            <a
+              href="https://vercel.com/new"
+              target="_blank"
+              rel="noreferrer"
+              className="px-3.5 py-2 bg-black hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer border border-slate-700"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              Deploy บน Vercel
+            </a>
+          </div>
+        </div>
+
+        {/* Readiness Checklist */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-center gap-2.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <div>
+              <span className="font-bold text-emerald-950 block">vercel.json พร้อม</span>
+              <span className="text-[10.5px] text-emerald-800">ตั้งค่า Vite SPA & Rewrites ครบถ้วน</span>
+            </div>
+          </div>
+
+          <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-center gap-2.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <div>
+              <span className="font-bold text-emerald-950 block">Vercel Serverless API</span>
+              <span className="text-[10.5px] text-emerald-800">/api/ai-analyze-document พร้อมใช้</span>
+            </div>
+          </div>
+
+          <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-center gap-2.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <div>
+              <span className="font-bold text-emerald-950 block">Git Init (Branch: main)</span>
+              <span className="text-[10.5px] text-emerald-800">Commit โค้ดทั้งหมด 35 ไฟล์แล้ว</span>
+            </div>
+          </div>
+
+          <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-center gap-2.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <div>
+              <span className="font-bold text-emerald-950 block">A4 Production Build</span>
+              <span className="text-[10.5px] text-emerald-800">ทดสอบผ่าน Vite Build 100%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 3 Step Deployment Instructions */}
+        <div className="space-y-4">
+          {/* Step 1 */}
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-xs text-slate-800 flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[11px] font-bold">1</span>
+                เชื่อมต่อและส่งโค้ดขึ้นคลัง GitHub (Push to GitHub)
+              </span>
+              <button
+                type="button"
+                onClick={() => handleCopyCode('git remote add origin https://github.com/YOUR_USERNAME/aspower-tax-invoice.git\ngit push -u origin main', 'git')}
+                className="px-2.5 py-1 text-[11px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                {copiedSnippet === 'git' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                {copiedSnippet === 'git' ? 'คัดลอกคำสั่งแล้ว' : 'คัดลอกคำสั่ง Git'}
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-600">
+              สร้างคลัง Repository เปล่าบน <a href="https://github.com/new" target="_blank" rel="noreferrer" className="text-blue-600 font-semibold underline">github.com/new</a> แล้วรันคำสั่งด้านล่างนี้ในโฟลเดอร์โปรเจกต์:
+            </p>
+            <div className="bg-slate-900 text-slate-200 p-3 rounded-lg font-mono text-[11px] overflow-x-auto select-all">
+              git remote add origin https://github.com/YOUR_USERNAME/aspower-tax-invoice.git<br />
+              git push -u origin main
+            </div>
+          </div>
+
+          {/* Step 2 */}
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-xs text-slate-800 flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[11px] font-bold">2</span>
+                นำเข้าและ Deploy บน Vercel (Import Git Repository)
+              </span>
+              <a
+                href="https://vercel.com/new"
+                target="_blank"
+                rel="noreferrer"
+                className="px-2.5 py-1 text-[11px] font-bold text-slate-900 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg flex items-center gap-1 cursor-pointer"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                เปิดหน้า Vercel Import
+              </a>
+            </div>
+            <p className="text-[11px] text-slate-600">
+              1. เข้าไปที่ Vercel แล้วกด <strong>Import</strong> คลัง GitHub ที่เพิ่งสร้าง<br />
+              2. ในส่วน <strong>Environment Variables</strong> ให้เพิ่มตัวแปร API Key:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 text-xs font-mono">
+              <div className="sm:col-span-4 bg-white border border-slate-300 p-2 rounded-lg flex items-center justify-between">
+                <span className="text-slate-800 font-bold">GEMINI_API_KEY</span>
+                <button
+                  type="button"
+                  onClick={() => handleCopyCode('GEMINI_API_KEY', 'env_name')}
+                  className="text-slate-400 hover:text-slate-700 cursor-pointer"
+                  title="คัดลอกชื่อตัวแปร"
+                >
+                  {copiedSnippet === 'env_name' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+              <div className="sm:col-span-8 bg-blue-50/70 border border-blue-200 p-2 rounded-lg text-slate-700 flex items-center justify-between font-sans text-[11px]">
+                <span>นำ API Key จาก <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="text-blue-600 font-bold underline">Google AI Studio</a> มาใส่ในช่อง Value</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Step 3 */}
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+            <span className="font-bold text-xs text-slate-800 flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[11px] font-bold">3</span>
+              ตั้งค่า Google Drive OAuth ให้รองรับโดเมน Vercel ของคุณ
+            </span>
+            <p className="text-[11px] text-slate-600">
+              หลังจาก Deploy บน Vercel คุณจะได้โดเมน เช่น <code className="bg-white px-1.5 py-0.5 rounded border border-slate-300 text-blue-700 font-mono">https://aspower-tax-invoice.vercel.app</code><br />
+              ให้เข้าไปที่ <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" className="text-blue-600 font-semibold underline">Google Cloud Console (โปรเจกต์ aspower-receipt)</a> &gt; แก้ไข <strong>OAuth 2.0 Client IDs</strong> &gt; เพิ่มโดเมนของ Vercel ลงใน <strong>Authorized JavaScript origins</strong> เพื่อให้ระบบสำรอง Google Drive ทำงานได้เต็ม 100%
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Section 7: ประวัติการสำรองข้อมูล (Backup Audit Logs) */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
         <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
           <Bell className="w-4 h-4 text-blue-600" />

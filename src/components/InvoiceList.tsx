@@ -50,9 +50,21 @@ export const InvoiceList: React.FC<Props> = ({
 }) => {
   const era = settings?.dateFormatPreference || 'buddhist';
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
+
+  // Customer dropdown list extracted from existing documents
+  const customerOptions = useMemo(() => {
+    const set = new Set<string>();
+    invoices.forEach(inv => {
+      if (inv.customerName && inv.customerName.trim()) {
+        set.add(inv.customerName.trim());
+      }
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'th'));
+  }, [invoices]);
 
   // Date Range Filter State
   const [dateRangePreset, setDateRangePreset] = useState<'all' | 'today' | '7days' | 'thisMonth' | 'lastMonth' | 'thisYear' | 'custom'>('all');
@@ -107,6 +119,7 @@ export const InvoiceList: React.FC<Props> = ({
 
   const handleResetFilters = () => {
     setSearchTerm('');
+    setSelectedCustomer('all');
     setStatusFilter('all');
     setSelectedYear('all');
     setSelectedMonth('all');
@@ -173,6 +186,9 @@ export const InvoiceList: React.FC<Props> = ({
         (inv.customerTaxId && inv.customerTaxId.toLowerCase().includes(cleanTerm)) ||
         matchAmount;
 
+      // Customer Dropdown Filter
+      const matchCustomer = selectedCustomer === 'all' || inv.customerName.trim() === selectedCustomer;
+
       // Status
       const matchStatus = statusFilter === 'all' || inv.status === statusFilter;
 
@@ -190,9 +206,9 @@ export const InvoiceList: React.FC<Props> = ({
         matchDateRange = matchDateRange && inv.documentDate <= endDate;
       }
 
-      return matchSearch && matchStatus && yearMatches && monthMatches && matchDateRange;
+      return matchCustomer && matchSearch && matchStatus && yearMatches && monthMatches && matchDateRange;
     });
-  }, [invoices, searchTerm, statusFilter, selectedYear, selectedMonth, startDate, endDate]);
+  }, [invoices, searchTerm, selectedCustomer, statusFilter, selectedYear, selectedMonth, startDate, endDate]);
 
   const handleExportCsv = () => {
     StorageService.exportSalesReportCsv(filteredInvoices);
@@ -261,13 +277,13 @@ export const InvoiceList: React.FC<Props> = ({
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3.5">
         {/* Main Search Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
-          {/* Search Input */}
-          <div className="lg:col-span-6 relative">
+          {/* Search Input: Document No, Customer Name, or Amount */}
+          <div className="lg:col-span-5 relative">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-600" />
             <input
               id="invoice-search-input"
               type="text"
-              placeholder="ค้นหาตามชื่อลูกค้า, เลขที่เอกสาร (เช่น 690010), หรือจำนวนเงิน (เช่น 1,500)..."
+              placeholder="ค้นหาเลขที่เอกสาร (690010), ชื่อลูกค้า, หรือจำนวนเงิน..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-10 py-2.5 bg-slate-50 hover:bg-slate-100/70 focus:bg-white border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs transition-all"
@@ -278,9 +294,26 @@ export const InvoiceList: React.FC<Props> = ({
                 className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-200 cursor-pointer transition-colors"
                 title="ล้างข้อความค้นหา"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <X className="w-3.5 h-3.5" />
               </button>
             )}
+          </div>
+
+          {/* Customer Filter Dropdown */}
+          <div className="lg:col-span-3">
+            <select
+              value={selectedCustomer}
+              onChange={e => setSelectedCustomer(e.target.value)}
+              className="w-full py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer truncate"
+              title="เลือกกรองเฉพาะลูกค้าที่ต้องการ"
+            >
+              <option value="all">ลูกค้าทั้งหมด ({customerOptions.length} ราย)</option>
+              {customerOptions.map(name => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Status Filter */}
@@ -296,30 +329,28 @@ export const InvoiceList: React.FC<Props> = ({
             </select>
           </div>
 
-          {/* Year Filter */}
-          <div className="lg:col-span-2">
+          {/* Year & Month Filter */}
+          <div className="lg:col-span-2 flex items-center gap-1.5">
             <select
               value={selectedYear}
               onChange={e => setSelectedYear(e.target.value)}
-              className="w-full py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              className="w-1/2 py-2.5 px-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              title="เลือกปีภาษี"
             >
-              <option value="all">ทุกปีภาษี</option>
+              <option value="all">ทุกปี</option>
               <option value="2569">{formatYearDisplay(2026, era)}</option>
               <option value="2568">{formatYearDisplay(2025, era)}</option>
             </select>
-          </div>
-
-          {/* Month Filter */}
-          <div className="lg:col-span-2">
             <select
               value={selectedMonth}
               onChange={e => setSelectedMonth(e.target.value)}
-              className="w-full py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              className="w-1/2 py-2.5 px-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              title="เลือกเดือน"
             >
               <option value="all">ทุกเดือน</option>
               {Array.from({ length: 12 }, (_, i) => (
                 <option key={i + 1} value={(i + 1).toString()}>
-                  {['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'][i]}
+                  {['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'][i]}
                 </option>
               ))}
             </select>
@@ -475,7 +506,7 @@ export const InvoiceList: React.FC<Props> = ({
           </div>
 
           <div className="flex items-center gap-3">
-            {(searchTerm || statusFilter !== 'all' || selectedYear !== 'all' || selectedMonth !== 'all' || startDate || endDate) && (
+            {(searchTerm || selectedCustomer !== 'all' || statusFilter !== 'all' || selectedYear !== 'all' || selectedMonth !== 'all' || startDate || endDate) && (
               <button
                 onClick={handleResetFilters}
                 className="text-[11px] text-rose-600 hover:text-rose-800 font-semibold flex items-center gap-1 hover:underline cursor-pointer"
